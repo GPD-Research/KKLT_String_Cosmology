@@ -1,0 +1,58 @@
+{
+  "module": "KKLT String Cosmology",
+  "version": "1.0.0",
+  "description": "Pre-configured flux topologies and uplift parameters for volume modulus stability testing.",
+  "configurations": [
+    {
+      "id": "default_ds_vacuum",
+      "name": "Stable de Sitter Vacuum (Metastable Dark Energy)",
+      "description": "Balanced flux and anti-D3 brane uplift producing a local minimum with small positive cosmological constant.",
+      "parameters": {
+        "w0": -0.0001,
+        "a_coeff": 1.0,
+        "a_param": 0.6283185307179586,
+        "g_s": 0.1,
+        "C_uplift": 3.0e-9
+      },
+      "expected_behavior": {
+        "vacuum_type": "de Sitter (dS)",
+        "minimum_t_approx": 11.3,
+        "cosmological_constant_sign": "positive"
+      }
+    },
+    {
+      "id": "un_uplifted_ads",
+      "name": "Un-uplifted Anti-de Sitter Well",
+      "description": "Pure F-term potential without anti-D3 brane uplift (C_uplift = 0). Yields a stable SUSY AdS minimum.",
+      "parameters": {
+        "w0": -0.0001,
+        "a_coeff": 1.0,
+        "a_param": 0.6283185307179586,
+        "g_s": 0.1,
+        "C_uplift": 0.0
+      },
+      "expected_behavior": {
+        "vacuum_type": "Anti-de Sitter (AdS)",
+        "minimum_t_approx": 11.1,
+        "cosmological_constant_sign": "negative"
+      }
+    },
+    {
+      "id": "runaway_overlift",
+      "name": "Overlifted Runaway Decompactification",
+      "description": "High anti-D3 brane tension that destroys the potential barrier, causing the extra dimensions to expand infinitely.",
+      "parameters": {
+        "w0": -0.0001,
+        "a_coeff": 1.0,
+        "a_param": 0.6283185307179586,
+        "g_s": 0.1,
+        "C_uplift": 1.0e-8
+      },
+      "expected_behavior": {
+        "vacuum_type": "Unstable / Runaway",
+        "minimum_t_approx": null,
+        "cosmological_constant_sign": "strictly_positive_no_barrier"
+      }
+    }
+  ]
+}

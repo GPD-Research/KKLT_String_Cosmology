@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KKLT String Cosmology Explorer</title>
+  <!-- Chart.js for canvas plotting -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent-color: #38bdf8;
+      --text-color: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+    }
+
+    body {
+      margin: 0;
+      padding: 1.5rem;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 1.5rem;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 0.25rem 0;
+      color: var(--accent-color);
+    }
+
+    p.subtitle {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .panel {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+
+    .control-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: var(--text-color);
+    }
+
+    .value-display {
+      float: right;
+      font-family: monospace;
+      color: var(--accent-color);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-color);
+    }
+
+    select {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 4px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 500px;
+      width: 100%;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-top: 1rem;
+    }
+
+    .status-ds { background-color: #064e3b; color: #34d399; }
+    .status-ads { background-color: #451a03; color: #fbbf24; }
+    .status-runaway { background-color: #4c0519; color: #f43f5e; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>KKLT String Cosmology Explorer</h1>
+      <p class="subtitle">Moduli Stabilization & Anti-D3 Brane Uplifting in Type IIB String Theory</p>
+    </header>
+
+    <!-- Controls Panel -->
+    <div class="panel">
+      <div class="control-group">
+        <label for="preset-select">Preset Scenario</label>
+        <select id="preset-select">
+          <option value="ds">Stable de Sitter Vacuum (Metastable Dark Energy)</option>
+          <option value="ads">Un-uplifted Anti-de Sitter Well (C_uplift = 0)</option>
+          <option value="overlift">Runaway Overlift (Barrier Destroyed)</option>
+        </select>
+      </div>
+
+      <hr style="border-color: var(--border-color); margin: 1.25rem 0;">
+
+      <div class="control-group">
+        <label for="w0-slider">Superpotential Flux $W_0$ <span id="w0-val" class="value-display">-0.0001</span></label>
+        <input type="range" id="w0-slider" min="-0.0005" max="-0.00001" step="0.00001" value="-0.0001">
+      </div>
+
+      <div class="control-group">
+        <label for="a-slider">Non-perturbative Exponent $a$ <span id="a-val" class="value-display">0.628</span></label>
+        <input type="range" id="a-slider" min="0.1" max="1.0" step="0.01" value="0.628">
+      </div>
+
+      <div class="control-group">
+        <label for="cuplift-slider">Uplift Scaling $C_{\text{uplift}}$ ($10^{-9}$) <span id="cuplift-val" class="value-display">3.0</span></label>
+        <input type="range" id="cuplift-slider" min="0.0" max="10.0" step="0.1" value="3.0">
+      </div>
+
+      <div id="vacuum-status" class="status-badge status-ds">Vacuum State: de Sitter (dS)</div>
+    </div>
+
+    <!-- Chart Panel -->
+    <div class="panel">
+      <div class="chart-container">
+        <canvas id="kkltChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Physics Core Functions ---
+    function computePotential(t, w0, a, cUplift) {
+      const A = 1.0;
+      
+      // Superpotential W(t)
+      const expTerm = Math.exp(-a * t);
+      const W = w0 + A * expTerm;
+      const dW = -a * A * expTerm;
+      
+      // Kahler derivative & metric
+      const dK = -3.0 / (2.0 * t);
+      const DW = dW + dK * W;
+      
+      const expK = 1.0 / Math.pow(2.0 * t, 3);
+      const invMetric = (2.0 * t * t) / 3.0;
+      
+      // Potentials
+      const VF = expK * (invMetric * DW * DW - 3.0 * W * W);
+      const Vuplift = cUplift / Math.pow(2.0 * t, 2);
+      const Vtotal = VF + Vuplift;
+
+      return { VF, Vuplift, Vtotal };
+    }
+
+    function generateCurveData(w0, a, cUplift) {
+      const points = 300;
+      const tMin = 5.0;
+      const tMax = 50.0;
+      const step = (tMax - tMin) / (points - 1);
+
+      const labels = [];
+      const vfData = [];
+      const vUpliftData = [];
+      const vTotalData = [];
+
+      for (let i = 0; i < points; i++) {
+        const t = tMin + i * step;
+        const res = computePotential(t, w0, a, cUplift);
+        labels.push(t.toFixed(1));
+        vfData.push(res.VF);
+        vUpliftData.push(res.Vuplift);
+        vTotalData.push(res.Vtotal);
+      }
+
+      return { labels, vfData, vUpliftData, vTotalData };
+    }
+
+    // --- DOM Elements ---
+    const w0Slider = document.getElementById('w0-slider');
+    const aSlider = document.getElementById('a-slider');
+    const cUpliftSlider = document.getElementById('cuplift-slider');
+    const presetSelect = document.getElementById('preset-select');
+
+    const w0Val = document.getElementById('w0-val');
+    const aVal = document.getElementById('a-val');
+    const cUpliftVal = document.getElementById('cuplift-val');
+    const statusBadge = document.getElementById('vacuum-status');
+
+    // --- Chart Setup ---
+    const ctx = document.getElementById('kkltChart').getContext('2d');
+    const initialData = generateCurveData(-0.0001, 0.628, 3.0e-9);
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: initialData.labels,
+        datasets: [
+          {
+            label: 'VF (Un-uplifted AdS)',
+            data: initialData.vfData,
+            borderColor: '#38bdf8',
+            borderDash: [5, 5],
+            borderWidth: 1.5,
+            pointRadius: 0
+          },
+          {
+            label: 'V_uplift (Anti-D3 Brane)',
+            data: initialData.vUpliftData,
+            borderColor: '#fb923c',
+            borderDash: [2, 2],
+            borderWidth: 1.5,
+            pointRadius: 0
+          },
+          {
+            label: 'V_total (KKLT Scalar Potential)',
+            data: initialData.vTotalData,
+            borderColor: '#4ade80',
+            borderWidth: 2.5,
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: { display: true, text: 'Volume Modulus t = Re(T)', color: '#94a3b8' },
+            ticks: { color: '#94a3b8' },
+            grid: { color: '#334155' }
+          },
+          y: {
+            title: { display: true, text: 'Scalar Potential V(t)', color: '#94a3b8' },
+            ticks: { color: '#94a3b8' },
+            grid: { color: '#334155' },
+            min: -1e-11,
+            max: 2e-11
+          }
+        },
+        plugins: {
+          legend: { labels: { color: '#f8fafc' } }
+        }
+      }
+    });
+
+    // --- Update UI State ---
+    function updatePlots() {
+      const w0 = parseFloat(w0Slider.value);
+      const a = parseFloat(aSlider.value);
+      const cUplift = parseFloat(cUpliftSlider.value) * 1e-9;
+
+      w0Val.textContent = w0.toFixed(5);
+      aVal.textContent = a.toFixed(3);
+      cUpliftVal.textContent = parseFloat(cUpliftSlider.value).toFixed(1);
+
+      const newData = generateCurveData(w0, a, cUplift);
+      chart.data.labels = newData.labels;
+      chart.data.datasets[0].data = newData.vfData;
+      chart.data.datasets[1].data = newData.vUpliftData;
+      chart.data.datasets[2].data = newData.vTotalData;
+      chart.update('none'); // Update smoothly without animated redraw
+
+      // Vacuum Status Check
+      const minVal = Math.min(...newData.vTotalData);
+      if (cUplift === 0) {
+        statusBadge.textContent = "Vacuum State: Anti-de Sitter (AdS)";
+        statusBadge.className = "status-badge status-ads";
+      } else if (minVal > 0 && minVal < 1e-11) {
+        statusBadge.textContent = "Vacuum State: de Sitter (dS)";
+        statusBadge.className = "status-badge status-ds";
+      } else {
+        statusBadge.textContent = "Vacuum State: Overlifted / Runaway";
+        statusBadge.className = "status-badge status-runaway";
+      }
+    }
+
+    // --- Event Listeners ---
+    w0Slider.addEventListener('input', updatePlots);
+    aSlider.addEventListener('input', updatePlots);
+    cUpliftSlider.addEventListener('input', updatePlots);
+
+    presetSelect.addEventListener('change', (e) => {
+      if (e.target.value === 'ds') {
+        w0Slider.value = -0.0001;
+        aSlider.value = 0.628;
+        cUpliftSlider.value = 3.0;
+      } else if (e.target.value === 'ads') {
+        w0Slider.value = -0.0001;
+        aSlider.value = 0.628;
+        cUpliftSlider.value = 0.0;
+      } else if (e.target.value === 'overlift') {
+        w0Slider.value = -0.0001;
+        aSlider.value = 0.628;
+        cUpliftSlider.value = 8.0;
+      }
+      updatePlots();
+    });
+
+    updatePlots();
+  </script>
+</body>
+</html>
