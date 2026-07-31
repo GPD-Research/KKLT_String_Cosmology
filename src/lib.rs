@@ -159,6 +159,10 @@ pub fn generate_kklt_curve(
 mod tests {
     use super::*;
 
+    fn approx_eq(a: f64, b: f64, tol: f64) -> bool {
+        (a - b).abs() <= tol
+    }
+
     #[test]
     fn test_kahler_validity() {
         let k = kahler_potential(1.0).unwrap();
@@ -185,5 +189,72 @@ mod tests {
 
         let params: KkltParameters = serde_json::from_str(raw).unwrap();
         assert!((params.c_uplift - 3.0e-9).abs() < 1e-18);
+    }
+
+    #[test]
+    fn test_unphysical_domain_guard() {
+        let params = KkltParameters::default();
+        for &t in &[0.0_f64, -5.0_f64] {
+            assert!(kahler_potential(t).is_err());
+            assert!(f_term_potential(t, &params).is_err());
+            assert!(total_kklt_potential(t, &params).is_err());
+        }
+    }
+
+    #[test]
+    fn test_covariant_derivative_zero_crossing_ads() {
+        let params = KkltParameters::default();
+
+        // Bracket a sign change and use bisection to find D_T W ~= 0.
+        let mut lo = 10.0_f64;
+        let mut hi = 30.0_f64;
+        let mut f_lo = covariant_derivative_w(lo, &params).unwrap();
+        let f_hi = covariant_derivative_w(hi, &params).unwrap();
+        assert!(f_lo * f_hi < 0.0);
+
+        for _ in 0..120 {
+            let mid = 0.5 * (lo + hi);
+            let f_mid = covariant_derivative_w(mid, &params).unwrap();
+            if f_lo * f_mid <= 0.0 {
+                hi = mid;
+            } else {
+                lo = mid;
+                f_lo = f_mid;
+            }
+        }
+
+        let t_root = 0.5 * (lo + hi);
+        let d_w = covariant_derivative_w(t_root, &params).unwrap();
+        assert!(d_w.abs() < 1e-7, "Expected D_TW close to zero, got {d_w:e}");
+    }
+
+    #[test]
+    fn test_pure_uplift_isolation() {
+        let params = KkltParameters {
+            w0: 0.0,
+            a_coeff: 0.0,
+            a_param: 2.0 * PI / 10.0,
+            g_s: 0.1,
+            c_uplift: 3.0e-9,
+        };
+        let t = 12.0_f64;
+
+        let v_f = f_term_potential(t, &params).unwrap();
+        let v_up = uplift_potential(t, &params).unwrap();
+        let v_tot = total_kklt_potential(t, &params).unwrap();
+
+        assert!(approx_eq(v_f, 0.0, 1e-18));
+        assert!(approx_eq(v_tot, v_up, 1e-18));
+    }
+
+    #[test]
+    fn test_curve_dimension_and_monotonicity() {
+        let params = KkltParameters::default();
+        let curve = generate_kklt_curve(10.0, 50.0, 100, &params).unwrap();
+        assert_eq!(curve.len(), 100);
+
+        for i in 1..curve.len() {
+            assert!(curve[i].t > curve[i - 1].t);
+        }
     }
 }
