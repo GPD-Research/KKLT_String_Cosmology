@@ -22,7 +22,8 @@ pub struct KkltParameters {
     /// String coupling constant (g_s)
     pub g_s: f64,
     /// Uplift parameter scaling anti-D3 brane tension (D-term / warped uplift)
-    pub C_uplift: f64,
+    #[serde(rename = "c_uplift", alias = "C_uplift", alias = "cUplift")]
+    pub c_uplift: f64,
 }
 
 impl Default for KkltParameters {
@@ -32,7 +33,7 @@ impl Default for KkltParameters {
             a_coeff: 1.0,
             a_param: 2.0 * PI / 10.0, // N = 10 D7 branes
             g_s: 0.1,
-            C_uplift: 3.0e-9,
+            c_uplift: 3.0e-9,
         }
     }
 }
@@ -54,8 +55,14 @@ pub fn superpotential(t: f64, params: &KkltParameters) -> f64 {
 
 /// Computes the derivative of the Superpotential with respect to T:
 /// dW/dT = -a * A * exp(-a * t)
-pub fn dW_dt(t: f64, params: &KkltParameters) -> f64 {
+pub fn d_w_dt(t: f64, params: &KkltParameters) -> f64 {
     -params.a_param * params.a_coeff * (-params.a_param * t).exp()
+}
+
+/// Backwards-compatible alias for existing callers.
+#[allow(non_snake_case)]
+pub fn dW_dt(t: f64, params: &KkltParameters) -> f64 {
+    d_w_dt(t, params)
 }
 
 /// Computes the Kähler covariant derivative: D_T W = dW/dT + (dK/dT) * W
@@ -65,7 +72,7 @@ pub fn covariant_derivative_w(t: f64, params: &KkltParameters) -> Result<f64, &'
         return Err("Volume modulus t must be strictly positive.");
     }
     let w = superpotential(t, params);
-    let dw = dW_dt(t, params);
+    let dw = d_w_dt(t, params);
     let dk_dt = -3.0 / (2.0 * t);
     
     Ok(dw + dk_dt * w)
@@ -98,7 +105,7 @@ pub fn uplift_potential(t: f64, params: &KkltParameters) -> Result<f64, &'static
         return Err("Volume modulus t must be strictly positive.");
     }
     // Using standard warped anti-D3 uplift scaling: C / (2t)^2
-    Ok(params.C_uplift / (2.0 * t).powi(2))
+    Ok(params.c_uplift / (2.0 * t).powi(2))
 }
 
 /// Computes the Total KKLT Scalar Potential: V_total(t) = V_F(t) + V_uplift(t)
@@ -164,5 +171,19 @@ mod tests {
         let curve = generate_kklt_curve(10.0, 100.0, 50, &params).unwrap();
         assert_eq!(curve.len(), 50);
         assert!(curve[0].t == 10.0);
+    }
+
+    #[test]
+    fn test_deserialize_legacy_c_uplift_key() {
+        let raw = r#"{
+            "w0": -0.0001,
+            "a_coeff": 1.0,
+            "a_param": 0.6283185307179586,
+            "g_s": 0.1,
+            "C_uplift": 3.0e-9
+        }"#;
+
+        let params: KkltParameters = serde_json::from_str(raw).unwrap();
+        assert!((params.c_uplift - 3.0e-9).abs() < 1e-18);
     }
 }

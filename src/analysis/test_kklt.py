@@ -8,8 +8,22 @@ Mirrors the mathematical formulation in src/lib.rs:
     V_total = V_F + V_uplift
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
+import sys
+
+try:
+    import numpy as np
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        "Missing dependency: numpy. Install with: pip install -r requirements.txt"
+    ) from exc
+
+try:
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        "Missing dependency: matplotlib. Install with: pip install -r requirements.txt"
+    ) from exc
+
 from dataclasses import dataclass
 
 @dataclass

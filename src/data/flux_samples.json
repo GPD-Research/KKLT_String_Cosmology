@@ -12,7 +12,7 @@
         "a_coeff": 1.0,
         "a_param": 0.6283185307179586,
         "g_s": 0.1,
-        "C_uplift": 3.0e-9
+          "c_uplift": 3.0e-9
       },
       "expected_behavior": {
         "vacuum_type": "de Sitter (dS)",
@@ -29,7 +29,7 @@
         "a_coeff": 1.0,
         "a_param": 0.6283185307179586,
         "g_s": 0.1,
-        "C_uplift": 0.0
+          "c_uplift": 0.0
       },
       "expected_behavior": {
         "vacuum_type": "Anti-de Sitter (AdS)",
@@ -46,7 +46,7 @@
         "a_coeff": 1.0,
         "a_param": 0.6283185307179586,
         "g_s": 0.1,
-        "C_uplift": 1.0e-8
+          "c_uplift": 1.0e-8
       },
       "expected_behavior": {
         "vacuum_type": "Unstable / Runaway",

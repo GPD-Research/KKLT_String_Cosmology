@@ -1,0 +1,17 @@
+{
+  "id": "new_scenario",
+  "name": "Scenario Name",
+  "description": "Short scientific intent for this parameter set.",
+  "parameters": {
+    "w0": -0.0001,
+    "a_coeff": 1.0,
+    "a_param": 0.6283185307179586,
+    "g_s": 0.1,
+    "c_uplift": 3.0e-9
+  },
+  "expected_behavior": {
+    "vacuum_type": "de Sitter (dS) | Anti-de Sitter (AdS) | Runaway",
+    "minimum_t_approx": 11.0,
+    "cosmological_constant_sign": "positive | negative | zero"
+  }
+}
