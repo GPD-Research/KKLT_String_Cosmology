@@ -47,7 +47,7 @@
     document.querySelectorAll(".open-only").forEach((e) => (e.style.display = open ? "" : "none"));
     $("right").style.display = open ? "none" : "";
     $("left").querySelector("h2").textContent = open ? "Oscillator α (ends tie left and right movers together)" : "Left movers α";
-    $("R-v").textContent = cfg.R.toFixed(1) + (Math.abs(cfg.R - 1) < 1e-9 ? " (self-dual)" : "");
+    $("R-v").textContent = Number(cfg.R.toFixed(2)) + (Math.abs(cfg.R - 1) < 1e-9 ? " (self-dual)" : "");
     $("k-v").textContent = cfg.k; $("w-v").textContent = cfg.w; $("L-v").textContent = cfg.L.toFixed(1);
     for (const b of ["left", "right"]) { $(`${b}-n-v`).textContent = cfg[b].n; $(`${b}-q-v`).textContent = cfg[b].q; }
     $("spd-v").textContent = Number($("spd").value).toFixed(1);
@@ -71,8 +71,7 @@
   $("m-closed").onclick = () => { cfg.mode = "closed"; syncControls(); updatePanel(); };
   $("m-open").onclick = () => { cfg.mode = "open"; syncControls(); updatePanel(); };
   $("tdual").onclick = () => {
-    const d = S.tDual(cfg);
-    cfg = { ...d, R: Math.min(3, Math.max(0.5, Math.round(d.R * 10) / 10)) };
+    cfg = S.tDual(cfg);
     syncControls(); updatePanel();
   };
   $("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; };
