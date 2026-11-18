@@ -1,7 +1,7 @@
 PYTHON ?= python3
 PYTHON_BIN := $(if $(wildcard .venv/bin/python),.venv/bin/python,$(PYTHON))
 
-.PHONY: setup-python check-rust test-rust check-python run-analysis validate-data experiment-python experiments search-ds search-ds-tuned all-checks
+.PHONY: setup-python check-rust test-rust check-python run-analysis validate-data experiment-python experiments search-ds search-ds-tuned test-python all-checks
 
 setup-python:
 	$(PYTHON) -m venv .venv
@@ -26,6 +26,9 @@ validate-data:
 experiment-python:
 	$(PYTHON_BIN) -m py_compile tools/run_experiments.py
 	$(PYTHON_BIN) tools/run_experiments.py
+
+test-python:
+	$(PYTHON_BIN) -m pytest -q tests
 
 experiments: test-rust experiment-python
 
@@ -52,4 +55,4 @@ search-ds-tuned:
 		--rank-mode=small-vacuum \
 		--keep-top=40
 
-all-checks: check-rust test-rust check-python validate-data
+all-checks: check-rust test-rust check-python validate-data test-python
