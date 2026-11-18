@@ -231,8 +231,8 @@
     ctx.fillStyle = "#05080a"; ctx.fillRect(0, 0, W, H);
     graticule(ctx, W, H, 12, 4);
     const span = pts[pts.length - 1].s, scale = H / 2 / 3.2;
-    const y0 = pts[0].y, slope = (pts[pts.length - 1].y - y0) / span;
-    const series = [["x1", "#39ff9c", (p) => p.x1], ["x2", "#ffcf4a", (p) => p.x2], ["y", "#4ad8ff", (p) => p.y - y0 - slope * p.s]];
+    const zero = cfg.mode === "open" ? (p) => (cfg.L * p.s) / Math.PI : (p) => (cfg.k / cfg.R) * tau + cfg.w * cfg.R * p.s;
+    const series = [["x1", "#39ff9c", (p) => p.x1], ["x2", "#ffcf4a", (p) => p.x2], ["y", "#4ad8ff", (p) => p.y - zero(p)]];
     for (const [, color, get] of series) {
       ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.shadowColor = color; ctx.shadowBlur = 6;
       ctx.beginPath();
