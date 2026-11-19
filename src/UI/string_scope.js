@@ -54,14 +54,18 @@
     dirty = true;
   }
 
-  function readControls() {
-    cfg.R = Number($("R").value); cfg.k = Number($("k").value); cfg.w = Number($("w").value); cfg.L = Number($("L").value);
-    for (const b of ["left", "right"]) cfg[b] = bank(Number($(`${b}-n`).value), Number($(`${b}-q`).value), $(`${b}-pol`).value);
+  // Read only the control that moved: after T-duality R = 1/R may sit between slider steps, and
+  // re-reading every slider would snap it and change the spectrum.
+  function readControls(el) {
+    if (["R", "k", "w", "L"].includes(el.id)) cfg[el.id] = Number(el.value);
+    for (const b of ["left", "right"]) {
+      if (el.id.startsWith(`${b}-`)) cfg[b] = bank(Number($(`${b}-n`).value), Number($(`${b}-q`).value), $(`${b}-pol`).value);
+    }
     $("preset").value = "";
     syncControls(); updatePanel();
   }
   document.querySelectorAll("#controls input[type=range], #controls select:not(#preset):not(#persist)").forEach((el) =>
-    el.addEventListener("input", () => (el.id === "spd" ? syncControls() : readControls()))
+    el.addEventListener("input", () => (el.id === "spd" ? syncControls() : readControls(el)))
   );
   $("preset").addEventListener("change", (e) => {
     const p = PRESETS[e.target.value];

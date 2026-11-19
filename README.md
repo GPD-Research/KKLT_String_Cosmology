@@ -8,7 +8,7 @@ Detailed manuscript overview: manuscript/md/About.md
 
 - Rust core model for KKLT potential calculations in src/lib.rs
 - Browser-based interactive explorer in src/UI/index.html
-- String Scope, an oscilloscope-style viewer of vibrating string states, in src/UI/string_scope.html
+- StringScope, an oscilloscope-style viewer of vibrating string states, in src/UI/string_scope.html
 - Python exploratory diagnostics and plotting in src/analysis/test_kklt.py
 - Scenario data in src/data/flux_samples.json
 
@@ -26,7 +26,9 @@ Detailed manuscript overview: manuscript/md/About.md
 
 	make run-analysis
 
-## String Scope viewer
+## StringScope viewer
+
+Run it online at https://gpd-research.com/KKLT_String_Cosmology/src/UI/string_scope.html.
 
 Open `src/UI/string_scope.html` in a browser. It needs no build or server.
 
