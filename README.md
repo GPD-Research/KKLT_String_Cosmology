@@ -49,3 +49,5 @@ The physics lives in `src/UI/strings.js`, and `src/analysis/string_spectrum.py` 
 - tools/: environment and utility scripts
 
 See docs/DEVELOPMENT.md for expansion ideas and workflow details.
+
+**Cache-busting:** every local script, stylesheet and image an HTML page loads carries `?v=<hash of the file>`, so visitors get changes at once instead of mixing new and cached files. After editing one, run `python tools/stamp_assets.py`; CI fails (`--check`) if a tag is stale.
