@@ -28,6 +28,8 @@ Detailed manuscript overview: manuscript/md/About.md
 
 ## String Scope viewer
 
+Run it online at https://gpd-research.com/KKLT_String_Cosmology/src/UI/string_scope.html.
+
 Open `src/UI/string_scope.html` in a browser. It needs no build or server.
 
 It animates a bosonic string on a circle of radius R, with α′ = 1. You can view a closed loop, or an open string stretched between two branes. Stepped knobs set the quantum numbers: mode number n, quanta q, polarization, KK momentum k, winding w, radius R and brane separation L.
