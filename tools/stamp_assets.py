@@ -21,8 +21,15 @@ REF = re.compile(
 SKIP = {".git", "node_modules", "target"}
 
 
+TEXT = {".js", ".css", ".svg"}
+
+
 def digest(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()[:8]
+    data = path.read_bytes()
+    # Hash text files with LF line ends, so a CRLF checkout (Windows autocrlf) stamps what CI sees.
+    if path.suffix.lower() in TEXT:
+        data = data.replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()[:8]
 
 
 def stamp(html: Path) -> tuple[str, list[str]]:
