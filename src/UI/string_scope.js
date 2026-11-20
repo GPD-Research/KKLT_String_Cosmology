@@ -200,11 +200,12 @@
     const x = X * cy - Z * sy, z = X * sy + Z * cy;
     return [geo.cx + x, geo.cy - (Y * cp - z * sp), Y * sp + z * cp];
   }
-  // A loop with no winding and nothing along x² folds flat onto a doubled line; it is drawn
-  // slightly opened (OPEN · sin σ along x²) so it still reads as a closed loop.
+  // A loop with no winding and no x² oscillator folds flat onto a doubled line; only then is it
+  // drawn slightly opened (OPEN · sin σ along x²) so it still reads as a closed loop.
   const OPEN = 0.35;
   function toXY(p) {
-    const th = p.y / cfg.R - Math.PI / 2, opened = cfg.mode === "closed" && cfg.w === 0 ? OPEN * Math.sin(p.s) : 0;
+    const flat = cfg.mode === "closed" && cfg.w === 0 && cfg.left.pol !== "x2" && cfg.right.pol !== "x2";
+    const th = p.y / cfg.R - Math.PI / 2, opened = flat ? OPEN * Math.sin(p.s) : 0;
     return proj(ring(th, Math.max(4 - geo.rho, p.x1 * geo.ux), (p.x2 + opened) * geo.ux));
   }
   const onScope = (ev) => { const r = fg.getBoundingClientRect(); return Math.hypot(ev.clientX - r.left - geo.cx, ev.clientY - r.top - geo.cy) < geo.rho * 1.6; };
