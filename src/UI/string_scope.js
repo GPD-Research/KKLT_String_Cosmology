@@ -171,19 +171,19 @@
     const rho = 0.3 * Math.min(W, H);
     geo = { W, H, cx: W / 2, cy: H / 2, rho, ux: rho * 0.35 };
     ctx.setLineDash([5, 6]); ctx.strokeStyle = "#2f6b57"; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(geo.cx, geo.cy, rho, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath();
+    for (let i = 0; i <= 120; i++) { const [x, y] = proj(ring(i / 120 * 2 * Math.PI, 0, 0)); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = "#6b8f84"; ctx.font = "11px ui-monospace, monospace";
     ctx.fillText(`compact y, circumference 2πR = ${(2 * Math.PI * cfg.R).toFixed(2)}`, 10, H - 10);
+    ctx.fillText("x¹: out from the circle · x²: up · y: around it · drag to rotate", 10, 16);
     if (cfg.mode === "open") {
       for (const [y, lab] of [[0, "brane A"], [cfg.L, "brane B"]]) {
-        const th = y / cfg.R - Math.PI / 2;
+        const th = y / cfg.R - Math.PI / 2, [x0, y0] = proj(ring(th, -0.4 * rho, 0)), [x1, y1] = proj(ring(th, 0.4 * rho, 0));
         ctx.strokeStyle = "#ffcf4a"; ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(geo.cx + (rho - 0.4 * rho) * Math.cos(th), geo.cy + (rho - 0.4 * rho) * Math.sin(th));
-        ctx.lineTo(geo.cx + (rho + 0.4 * rho) * Math.cos(th), geo.cy + (rho + 0.4 * rho) * Math.sin(th));
-        ctx.stroke();
-        ctx.fillStyle = "#ffcf4a";
-        ctx.fillText(lab, geo.cx + 1.5 * rho * Math.cos(th) - 22, geo.cy + 1.5 * rho * Math.sin(th) + (lab === "brane A" ? -4 : 12));
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        const [lx, ly] = proj(ring(th, 0.55 * rho, 0));
+        ctx.fillStyle = "#ffcf4a"; ctx.fillText(lab, lx - 22, ly + (lab === "brane A" ? -4 : 12));
       }
     }
     trace.dims = fit(tr);
@@ -192,12 +192,40 @@
   }
   const trace = {};
 
-  function toXY(p) {
-    const th = p.y / cfg.R - Math.PI / 2;
-    const r = Math.max(4, geo.rho + p.x1 * geo.ux);
-    const d = p.x2 * geo.ux * 0.45;
-    return [geo.cx + r * Math.cos(th) + d, geo.cy + r * Math.sin(th) - d];
+  // 3-D view: the compact circle lies flat, x¹ points out from it and x² points up. Drag turns it.
+  const view = { yaw: 0.9, pitch: 0.55, drag: null };
+  const ring = (th, out, up) => { const r = geo.rho + out; return [r * Math.cos(th), up, r * Math.sin(th)]; };
+  function proj([X, Y, Z]) {
+    const cy = Math.cos(view.yaw), sy = Math.sin(view.yaw), cp = Math.cos(view.pitch), sp = Math.sin(view.pitch);
+    const x = X * cy - Z * sy, z = X * sy + Z * cy;
+    return [geo.cx + x, geo.cy - (Y * cp - z * sp), Y * sp + z * cp];
   }
+  // A loop with no winding and no x² oscillator folds flat onto a doubled line; only then is it
+  // drawn slightly opened (OPEN · sin σ along x²) so it still reads as a closed loop.
+  const OPEN = 0.35;
+  function toXY(p) {
+    const flat = cfg.mode === "closed" && cfg.w === 0 && cfg.left.pol !== "x2" && cfg.right.pol !== "x2";
+    const th = p.y / cfg.R - Math.PI / 2, opened = flat ? OPEN * Math.sin(p.s) : 0;
+    return proj(ring(th, Math.max(4 - geo.rho, p.x1 * geo.ux), (p.x2 + opened) * geo.ux));
+  }
+  const onScope = (ev) => { const r = fg.getBoundingClientRect(); return Math.hypot(ev.clientX - r.left - geo.cx, ev.clientY - r.top - geo.cy) < geo.rho * 1.6; };
+  fg.style.touchAction = "pan-y";
+  fg.addEventListener("pointerdown", (ev) => {
+    if (!onScope(ev)) return;
+    view.drag = { x: ev.clientX, y: ev.clientY, yaw: view.yaw, pitch: view.pitch };
+    fg.setPointerCapture(ev.pointerId); ev.preventDefault();
+  });
+  fg.addEventListener("pointermove", (ev) => {
+    fg.style.cursor = view.drag ? "grabbing" : onScope(ev) ? "grab" : "";
+    if (!view.drag) return;
+    const k = 1 / Math.max(geo.rho, 60);
+    view.yaw = view.drag.yaw - (ev.clientX - view.drag.x) * k;
+    view.pitch = Math.max(-1.5, Math.min(1.5, view.drag.pitch + (ev.clientY - view.drag.y) * k));
+    dirty = true;
+  });
+  const endDrag = () => (view.drag = null);
+  fg.addEventListener("pointerup", endDrag); fg.addEventListener("pointercancel", endDrag);
+  fg.addEventListener("touchstart", (ev) => { if (onScope(ev.touches[0])) ev.preventDefault(); }, { passive: false });
 
   function drawFrame() {
     const ctx = fg.getContext("2d");
