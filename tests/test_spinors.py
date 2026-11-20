@@ -28,6 +28,12 @@ out.turn4 = diff(S.rotate(G, 0, 3, 4 * Math.PI, psi), psi, 1);
 out.norm = Math.abs(S.norm(S.rotate(G, 2, 7, 1.234, psi)) - S.norm(psi));
 const ab = S.apply(G[1], S.apply(G[4], psi)), ba = S.apply(G[4], S.apply(G[1], psi));
 out.antipodal = diff(ab, ba, -1);
+const th = 0.8, lhs = S.rotate(G, 2, 6, th, S.apply(G[2], S.rotate(G, 2, 6, -th, psi)));
+const rhs = S.apply(G[2], psi).map((x, i) => {
+  const y = S.apply(G[6], psi)[i];
+  return [Math.cos(th) * x[0] + Math.sin(th) * y[0], Math.cos(th) * x[1] + Math.sin(th) * y[1]];
+});
+out.covariant = diff(lhs, rhs, 1);
 const parity = (i) => { let c = 0; for (; i; i >>= 1) c ^= i & 1; return c; };
 const weyl = psi.map((x, i) => (parity(i) ? [0, 0] : x));
 const turned = S.rotate(G, 5, 8, 0.7, weyl);
@@ -63,6 +69,10 @@ def test_rotations_are_unitary(result):
 
 def test_anticommuting_orders_land_antipodal(result):
     assert result["antipodal"] < 1e-12
+
+
+def test_spinor_turns_the_same_way_as_vectors(result):
+    assert result["covariant"] < 1e-12
 
 
 def test_spatial_rotations_keep_chirality(result):

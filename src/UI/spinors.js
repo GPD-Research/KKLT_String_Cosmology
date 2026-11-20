@@ -36,9 +36,10 @@
   }
   const apply = (M, v) => M.map((row) => row.reduce((s, m, j) => add(s, mul(m, v[j])), C(0)));
   const matmul = (A, B) => A.map((row) => B[0].map((_, j) => row.reduce((s, a, k) => add(s, mul(a, B[k][j])), C(0))));
-  // Spin lift of a rotation by θ in the (a, b) plane: S = cos(θ/2) + sin(θ/2) γ_a γ_b. S(2π) = −1.
+  // Spin lift of the rotation by θ that turns axis a toward axis b: S = cos(θ/2) + sin(θ/2) γ_b γ_a,
+  // so S γ_a S⁻¹ = cos θ γ_a + sin θ γ_b, matching the vector rotation. S(2π) = −1.
   function rotate(G, a, b, theta, v) {
-    const w = apply(G[a], apply(G[b], v)), c = Math.cos(theta / 2), s = Math.sin(theta / 2);
+    const w = apply(G[b], apply(G[a], v)), c = Math.cos(theta / 2), s = Math.sin(theta / 2);
     return v.map((x, i) => [c * x[0] + s * w[i][0], c * x[1] + s * w[i][1]]);
   }
   const norm = (v) => Math.sqrt(v.reduce((s, x) => s + x[0] * x[0] + x[1] * x[1], 0));
