@@ -81,6 +81,12 @@ def _super_massless(cfg):
     left, right, is_a = cfg["left"], cfg["right"], cfg["type"] == "IIA"
     if left["sector"] == "NS" and right["sector"] == "NS":
         return _closed_tensor(left["fpol"], right["fpol"], "ψ₋½ ψ̃₋½")
+    if left["sector"] == "R" and right["sector"] == "R" and not cfg["gso"]:
+        forms = [("axions", "C_0", 2), ("1-forms", "C_1", 16), ("2-forms", "C_2", 56), ("3-forms", "C_3", 112), ("4-forms", "C_4", 70)]
+        return [
+            _state(f"Ramond–Ramond {n}", sym, f"{k} of the 256 unprojected R–R states (both chiralities)", share=k)
+            for n, sym, k in forms
+        ]
     if left["sector"] == "R" and right["sector"] == "R":
         if is_a:
             return [
@@ -98,6 +104,11 @@ def _super_massless(cfg):
             ),
         ]
     ns = left if left["sector"] == "NS" else right
+    if not cfg["gso"]:
+        return [
+            _state("Gravitini", "ψ_μ", "spin 3/2, both chiralities without GSO; 112 of 128 states", share=112),
+            _state("Dilatini", "λ", "spin ½, both chiralities; 16 of 128 states", share=16),
+        ]
     chir = "opposite chirality to its mirror (Type IIA)" if is_a else "same chirality as its mirror (Type IIB)"
     if _compact(ns["fpol"]):
         return [_state("Spin-½ fermion", "ψ_y", f"the gravitino's part along the circle, spin ½ in 9-D; {chir}")]
@@ -148,7 +159,7 @@ def _classify_super(cfg, base):
                 return _state(
                     "Photino",
                     "λ",
-                    "massless spin-½ superpartner of the photon (a gaugino), a 16-component spinor",
+                    f"massless spin-½ superpartner of the photon (a gaugino), a {16 if cfg['gso'] else 32}-component spinor",
                     **base,
                 )
             return _state("W-ino", "W̃±", "massive spin-½ superpartner of the stretched-string W boson", **base)

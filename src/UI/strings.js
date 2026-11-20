@@ -51,6 +51,10 @@
   function superMassless(cfg) {
     const L = cfg.left, Rb = cfg.right, A = cfg.type === "IIA";
     if (L.sector === "NS" && Rb.sector === "NS") return closedTensor(L.fpol, Rb.fpol, "ψ₋½ ψ̃₋½");
+    // Without GSO, the R ground state keeps both chiralities: 16 ⊗ 16 = 256 R–R states holding every form.
+    if (L.sector === "R" && Rb.sector === "R" && !cfg.gso)
+      return [["axions", "C_0", 2], ["1-forms", "C_1", 16], ["2-forms", "C_2", 56], ["3-forms", "C_3", 112], ["4-forms", "C_4", 70]].map(
+        ([n, sym, k]) => state(`Ramond–Ramond ${n}`, sym, `${k} of the 256 unprojected R–R states (both chiralities)`, { share: k }));
     if (L.sector === "R" && Rb.sector === "R")
       return A
         ? [
@@ -63,6 +67,10 @@
             state("Ramond–Ramond 4-form", "C_4", "35 of the 64 R–R states, self-dual; couples to D3-branes like KKLT's anti-D3", { share: 35 }),
           ];
     const ns = L.sector === "NS" ? L : Rb;
+    if (!cfg.gso) return [
+      state("Gravitini", "ψ_μ", "spin 3/2, both chiralities without GSO; 112 of 128 states", { share: 112 }),
+      state("Dilatini", "λ", "spin ½, both chiralities; 16 of 128 states", { share: 16 }),
+    ];
     const chir = A ? "opposite chirality to its mirror (Type IIA)" : "same chirality as its mirror (Type IIB)";
     if (compact(ns.fpol)) return [state("Spin-½ fermion", "ψ_y", `the gravitino's part along the circle, spin ½ in 9-D; ${chir}`)];
     return [
@@ -97,7 +105,7 @@
       if (!lowest(b)) return massive;
       if (b.sector === "R")
         return cfg.L === 0
-          ? state("Photino", "λ", "massless spin-½ superpartner of the photon (a gaugino), a 16-component spinor", base)
+          ? state("Photino", "λ", `massless spin-½ superpartner of the photon (a gaugino), a ${cfg.gso ? "16" : "32"}-component spinor`, base)
           : state("W-ino", "W̃±", "massive spin-½ superpartner of the stretched-string W boson", base);
       if (!compact(b.fpol))
         return cfg.L === 0

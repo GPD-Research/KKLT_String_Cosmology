@@ -110,6 +110,14 @@ def test_superstring_massless_closed_states():
     assert f["fermion"] and f["massless"] and [p["symbol"] for p in f["parts"]] == ["ψ_μ", "λ"]
 
 
+def test_superstring_without_gso_keeps_both_chiralities():
+    rr = ss.classify(sup(closed(sbank("R", 0), sbank("R", 0)), gso=False))
+    assert [p["symbol"] for p in rr["parts"]] == ["C_0", "C_1", "C_2", "C_3", "C_4"]
+    assert sum(p["share"] for p in rr["parts"]) == 256
+    f = ss.classify(sup(closed(sbank(), sbank("R", 0)), gso=False))
+    assert sum(p["share"] for p in f["parts"]) == 128
+
+
 def test_superstring_has_no_self_dual_gauge_bosons():
     for left, right in [(sbank(q=1, r=0.5), sbank()), (sbank("R", 1), sbank("R", 0))]:
         s = ss.classify(sup(closed(left, right, k=1, w=1, R=1.0)))

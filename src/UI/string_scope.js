@@ -218,7 +218,7 @@
         return `<span class="chip ${kept ? "keep" : "drop"}${Math.abs(n - N) < 1e-9 ? " cur" : ""}">${hf(n)}</span>`;
       }).join("");
       const note = b.sector === "R"
-        ? "R: every level kept, with one spinor chirality (16 of 32 components)"
+        ? cfg.gso ? "R: every level kept, with one spinor chirality (16 of 32 components)" : "R: projection off, both chiralities (32 components)"
         : cfg.gso ? "NS: half-integer N kept (odd ψ number); integer N removed" : "NS: projection off, all kept";
       const here = levels.some((n) => Math.abs(n - N) < 1e-9) ? "" : ` · this state: N = ${hf(N)}`;
       return `<div class="lad"><span class="lab">${lab} ${b.sector}</span>${chips}<span class="lnote">${note}${here}</span></div>`;
@@ -257,7 +257,7 @@
     $("p-sym").style.fontSize = st.symbol.length > 12 ? "2rem" : "";
     $("p-sym").classList.toggle("bad", !st.physical || st.m2 < -1e-9);
     $("p-name").textContent = st.name;
-    $("p-detail").textContent = st.parts && st.parts.length > 1 ? (st.parts[0].share ? "64 states at this level, split into:" : "superposition, split into:") : st.detail;
+    $("p-detail").textContent = st.parts && st.parts.length > 1 ? (st.parts[0].share ? `${st.parts.reduce((t, q) => t + q.share, 0)} states at this level, split into:` : "superposition, split into:") : st.detail;
     $("p-parts").innerHTML = st.parts && st.parts.length > 1
       ? st.parts.map((p) => `<li><span>${p.name}<br><span style="color:var(--dim);font-size:.75rem">${p.detail}</span></span><span class="s">${sub(p.symbol)} · ${p.share ? `${p.share} states` : "50%"}</span></li>`).join("")
       : "";
