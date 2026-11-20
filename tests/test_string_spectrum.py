@@ -82,6 +82,63 @@ def test_shape_boundary_conditions():
     assert pts[0]["y"] == pytest.approx(0) and pts[-1]["y"] == pytest.approx(3.0)
 
 
+def sbank(sector="NS", r=0.5, fpol="x1", n=1, q=0, pol="x1"):
+    return {"n": n, "q": q, "pol": pol, "sector": sector, "r": r, "fpol": fpol}
+
+
+def sup(cfg, type_="IIB", gso=True):
+    return {**cfg, "theory": "super", "type": type_, "gso": gso}
+
+
+def test_superstring_gso_removes_tachyon():
+    s = ss.classify(sup(closed(sbank(r=0), sbank(r=0))))
+    assert s["name"] == "Removed by the GSO projection" and not s["physical"]
+    s = ss.classify(sup(closed(sbank(r=0), sbank(r=0)), gso=False))
+    assert s["name"] == "Tachyon" and s["m2"] == pytest.approx(-2)
+    assert ss.classify(sup(open_(sbank(r=0)), gso=False))["m2"] == pytest.approx(-0.5)
+
+
+def test_superstring_massless_closed_states():
+    g = ss.classify(sup(closed(sbank(), sbank())))
+    assert g["name"] == "Graviton" and g["massless"] and not g["fermion"]
+    a = ss.classify(sup(closed(sbank("R", 0), sbank("R", 0)), "IIA"))
+    b = ss.classify(sup(closed(sbank("R", 0), sbank("R", 0)), "IIB"))
+    assert [p["symbol"] for p in a["parts"]] == ["C_1", "C_3"]
+    assert [p["symbol"] for p in b["parts"]] == ["C_0", "C_2", "C_4"]
+    assert sum(p["share"] for p in a["parts"]) == sum(p["share"] for p in b["parts"]) == 64
+    f = ss.classify(sup(closed(sbank(), sbank("R", 0))))
+    assert f["fermion"] and f["massless"] and [p["symbol"] for p in f["parts"]] == ["ψ_μ", "λ"]
+
+
+def test_superstring_has_no_self_dual_gauge_bosons():
+    for left, right in [(sbank(q=1, r=0.5), sbank()), (sbank("R", 1), sbank("R", 0))]:
+        s = ss.classify(sup(closed(left, right, k=1, w=1, R=1.0)))
+        assert s["physical"] and s["m2"] > 1
+
+
+def test_superstring_level_matching_with_half_integers():
+    c = sup(closed(sbank(q=1, r=0.5), sbank()))
+    assert not ss.level_matched(c)
+    assert ss.level_matched({**c, "k": 1, "w": 1})
+
+
+def test_superstring_t_duality_swaps_iia_and_iib():
+    for k, w, R in itertools.product(range(-2, 3), range(-2, 3), (0.5, 1.3, 2.5)):
+        cfg = sup(closed(sbank("R", 0), sbank("R", 0), k=k, w=w, R=R), "IIA")
+        d = ss.t_dual(cfg)
+        assert d["type"] == "IIB" and ss.mass_squared(cfg) == pytest.approx(ss.mass_squared(d))
+    rr = sup(closed(sbank("R", 0), sbank("R", 0)), "IIA")
+    assert ss.classify(ss.t_dual(ss.t_dual(rr)))["symbol"] == ss.classify(rr)["symbol"]
+
+
+def test_superstring_open_states():
+    assert ss.classify(sup(open_(sbank())))["symbol"] == "γ"
+    lam = ss.classify(sup(open_(sbank("R", 0))))
+    assert lam["name"] == "Photino" and lam["massless"] and lam["fermion"]
+    assert ss.classify(sup(open_(sbank("R", 0), L=4.0)))["symbol"] == "W̃±"
+    assert ss.classify(sup(open_(sbank(fpol="y"))))["name"] == "Brane-position scalar"
+
+
 def _configs():
     pols = ("x1", "x2", "y")
     for (nl, ql, pl), (nr, qr, pr) in itertools.product(
@@ -92,6 +149,14 @@ def _configs():
             yield closed(bank(nl, ql, pl), bank(nr, qr, pr), k=k, w=w, R=R)
     for (n, q), pol, L in itertools.product([(1, 0), (1, 1), (2, 1), (3, 2)], pols, (0, 2.5, 2 * math.pi)):
         yield open_(bank(n, q, pol), L=L)
+    sides = [("NS", 0), ("NS", 0.5), ("NS", 1.5), ("R", 0), ("R", 1)]
+    for (sl, rl), (sr, rr), (ql, fl), type_, gso in itertools.product(
+        sides, sides, [(0, "x1"), (1, "y")], ("IIA", "IIB"), (True, False)
+    ):
+        for k, w, R in [(0, 0, 1.5), (1, 0, 0.6), (1, 1, 1.0), (0, 1, 1.7)]:
+            left, right = sbank(sl, rl, fl, q=ql), sbank(sr, rr, "x2")
+            yield sup(closed(left, right, k=k, w=w, R=R), type_, gso)
+        yield sup(open_(sbank(sl, rl, fl, q=ql), L=2.5 * ql), type_, gso)
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
@@ -110,9 +175,11 @@ def test_js_matches_python():
     )
     for cfg, js in zip(cfgs, json.loads(res.stdout), strict=True):
         py = ss.classify(cfg)
-        for key in ("name", "symbol", "detail", "massless", "physical", "N", "Nt"):
+        for key in ("name", "symbol", "detail", "massless", "physical", "N", "Nt", "gso", "fermion"):
             assert js["c"][key] == py[key], (cfg, key)
         assert js["c"]["m2"] == pytest.approx(py["m2"])
+        js_shares = [p.get("share") for p in js["c"].get("parts", [])]
+        assert js_shares == [p.get("share") for p in py.get("parts", [])], cfg
         for a, b in zip(js["s"], ss.shape(cfg, 0.9, 16), strict=True):
             for key in ("x1", "x2", "y"):
                 assert a[key] == pytest.approx(b[key], abs=1e-9)

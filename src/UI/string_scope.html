@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StringScope — vibrating string states</title>
-  <meta name="description" content="String Scope: an interactive oscilloscope for bosonic string states on a circle. Step oscillator quanta, momentum, winding and radius and watch the string vibrate as the mass formula and level matching update live, from the tachyon to the graviton.">
+  <meta name="description" content="StringScope: an interactive oscilloscope for string states on a circle, bosonic (26-D) or Type II superstring (10-D). Step oscillator quanta, momentum, winding and radius and watch the string vibrate as the mass formula, level matching and GSO projection update live, from the graviton and gravitino to the Ramond–Ramond forms.">
   <style>
     :root { --bg:#05080a; --panel:#0d1417; --line:#1f3a33; --phos:#39ff9c; --dim:#6b8f84; --amber:#ffcf4a; --cyan:#4ad8ff; --red:#ff6b6b; --text:#d8f5ea; }
     * { box-sizing: border-box; }
@@ -45,17 +45,30 @@
     .eq span.t.flash { background:#3a5c1f; }
     .ok { color:var(--phos); } .bad { color:var(--red); }
     .note { color:var(--dim); font-size:.75rem; margin-top:.6rem; }
+    .ch5 { position:relative; width:100%; height:210px; margin-top:.6rem; }
+    .ch5 canvas { position:absolute; inset:0; width:100%; height:100%; }
+    .lad { display:flex; flex-wrap:wrap; align-items:center; gap:.25rem; margin:.3rem 0; font-size:.78rem; }
+    .lad .lab { width:5.5rem; color:var(--dim); }
+    .chip { min-width:1.9rem; text-align:center; padding:.05rem .25rem; border:1px solid var(--line); border-radius:3px; }
+    .chip.keep { color:var(--phos); } .chip.drop { color:#4a5a55; text-decoration:line-through; }
+    .chip.cur { border-color:var(--amber); box-shadow:0 0 6px #ffcf4a88; }
+    .lad .lnote { width:100%; color:var(--dim); font-size:.72rem; padding-left:5.75rem; }
   </style>
 </head>
 <body>
   <header>
     <h1>STRINGSCOPE</h1>
-    <span style="color:var(--dim)">Bosonic string on a circle of radius R, in units α′ = 1. Each knob setting is one quantum state.</span>
+    <span style="color:var(--dim)" id="subtitle">Bosonic string on a circle of radius R, in units α′ = 1. Each knob setting is one quantum state.</span>
     <a href="index.html">KKLT potential explorer</a>
   </header>
   <div class="wrap">
     <section class="panel" id="controls">
       <h2>Controls</h2>
+      <div class="ctl seg"><button id="t-bos" class="on">Bosonic 26-D</button><button id="t-sup">Superstring 10-D</button></div>
+      <div class="super-only">
+        <div class="ctl seg"><button id="ty-IIA">Type IIA</button><button id="ty-IIB" class="on">Type IIB</button></div>
+        <div class="ctl"><label style="justify-content:flex-start;gap:.4rem"><input type="checkbox" id="gso" checked> GSO projection (removes the tachyon)</label></div>
+      </div>
       <div class="ctl seg"><button id="m-closed" class="on">Closed loop</button><button id="m-open">Open string</button></div>
       <div class="ctl"><label>Preset</label><select id="preset" style="width:100%"></select></div>
       <div class="ctl"><label>Radius R <b id="R-v"></b></label><input type="range" id="R" min="0.5" max="3" step="0.1" value="1.5"></div>
@@ -75,13 +88,18 @@
     </section>
 
     <section class="panel">
-      <h2>CH 1: the string. The dashed ring is the compact dimension y, x¹ is radial, and x² is drawn at 45° as if into the page</h2>
+      <h2>CH 1: the string X. The dashed ring is the compact dimension y; x¹ points out from it and x² points up. Drag to rotate</h2>
       <div class="scope"><canvas id="bg"></canvas><canvas id="fg"></canvas></div>
       <h2 style="margin-top:.6rem">CH 2–4: displacement vs σ</h2>
       <div class="ch2"><canvas id="trace"></canvas>
         <span class="tag" style="left:8px;top:4px;color:var(--phos)">x¹ (radial)</span>
-        <span class="tag" style="left:110px;top:4px;color:var(--amber)">x² (into page)</span>
-        <span class="tag" style="left:250px;top:4px;color:var(--cyan)">δy (along ring)</span>
+        <span class="tag" style="left:110px;top:4px;color:var(--amber)">x² (up)</span>
+        <span class="tag" style="left:200px;top:4px;color:var(--cyan)">δy (along ring)</span>
+        <span class="tag super-only" style="left:330px;top:4px;color:#ff7ad9">ψ, ψ̃ (fermions, real part)</span>
+      </div>
+      <div class="super-only">
+        <h2 style="margin-top:.6rem">CH 5: worldsheet fermions ψ around σ (turns with CH 1)</h2>
+        <div class="ch5"><canvas id="ferm"></canvas></div>
       </div>
     </section>
 
@@ -96,14 +114,18 @@
         <tr><td>α′M²</td><td id="r-m2"></td></tr>
         <tr><td>Mass M (string units 1/√α′)</td><td id="r-m"></td></tr>
         <tr><td>Oscillator levels N, Ñ</td><td id="r-n"></td></tr>
-        <tr class="closed-only"><td>Level matching N − Ñ = kw</td><td id="r-lm"></td></tr>
+        <tr class="closed-only"><td id="r-lm-l">Level matching N − Ñ = kw</td><td id="r-lm"></td></tr>
+        <tr class="super-only"><td>Sectors · statistics</td><td id="r-stat"></td></tr>
+        <tr><td>Spacetime dimensions</td><td id="r-dim"></td></tr>
+        <tr class="closed-only"><td>Radius R · T-dual α′/R</td><td id="r-dual"></td></tr>
       </table>
+      <div class="super-only" id="ladder"></div>
       <h2>The math behind the trace</h2>
       <div class="eq" id="eq"></div>
-      <p class="note">This is the textbook bosonic string (26-D, so it has a tachyon) with one dimension curled into a circle. It is not the full Calabi–Yau compactification of Type IIB KKLT. It shows how particles appear as string vibrations, and how the size of the extra dimension (the radion, a toy version of KKLT's volume modulus t) shifts the mass tower. Amplitudes show the classical coherent-state size, which is proportional to √(q/n).</p>
+      <p class="note" id="note">This is the textbook bosonic string (26-D, so it has a tachyon) with one dimension curled into a circle. It is not the full Calabi–Yau compactification of Type IIB KKLT. It shows how particles appear as string vibrations, and how the size of the extra dimension (the radion, a toy version of KKLT's volume modulus t) shifts the mass tower. Amplitudes show the classical coherent-state size, which is proportional to √(q/n).</p>
     </section>
   </div>
-  <script src="strings.js?v=f214b133"></script>
-  <script src="string_scope.js?v=e740100d"></script>
+  <script src="strings.js?v=ab2a7b90"></script>
+  <script src="string_scope.js?v=81dc8069"></script>
 </body>
 </html>

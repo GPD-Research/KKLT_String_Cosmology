@@ -2,7 +2,10 @@
   const S = window.Strings;
   const $ = (id) => document.getElementById(id);
   const POLS = [["x1", "x¹"], ["x2", "x²"], ["y", "y (compact)"]];
-  const bank = (n, q, pol) => ({ n, q, pol });
+  const bank = (n, q, pol, sector = "NS", r = 0, fpol = "x1") => ({ n, q, pol, sector, r, fpol });
+  // Superstring bank: worldsheet fermion psi_{-r} in sector NS or R, plus an optional X oscillator.
+  const sb = (sector, r, fpol, n = 1, q = 0, pol = "x1") => bank(n, q, pol, sector, r, fpol);
+  const FERMION_MODES = { NS: [[0, "none"], [0.5, "ψ₋½"], [1.5, "ψ₋3/2"]], R: [[0, "none (spinor)"], [1, "ψ₋₁"]] };
 
   const PRESETS = {
     "Graviton g_μν": { mode: "closed", left: bank(1, 1, "x1"), right: bank(1, 1, "x1"), k: 0, w: 0, R: 1.5 },
@@ -20,7 +23,27 @@
     "Open: tachyon T": { mode: "open", left: bank(1, 0, "x1"), L: 0, R: 1.5 },
   };
 
-  let cfg = { mode: "closed", left: bank(1, 1, "x1"), right: bank(1, 1, "x1"), k: 0, w: 0, R: 1.5, L: 0 };
+  const SUPER_PRESETS = {
+    "Graviton g_μν (NS–NS)": { mode: "closed", left: sb("NS", 0.5, "x1"), right: sb("NS", 0.5, "x1"), k: 0, w: 0, R: 1.5 },
+    "Graviton + Kalb–Ramond B_μν": { mode: "closed", left: sb("NS", 0.5, "x1"), right: sb("NS", 0.5, "x2"), k: 0, w: 0, R: 1.5 },
+    "Radion σ": { mode: "closed", left: sb("NS", 0.5, "y"), right: sb("NS", 0.5, "y"), k: 0, w: 0, R: 1.5 },
+    "Graviphoton A_μ": { mode: "closed", left: sb("NS", 0.5, "x1"), right: sb("NS", 0.5, "y"), k: 0, w: 0, R: 1.5 },
+    "Gravitino ψ_μ + dilatino λ (NS–R)": { mode: "closed", left: sb("NS", 0.5, "x1"), right: sb("R", 0, "x1"), k: 0, w: 0, R: 1.5 },
+    "Ramond–Ramond forms (R–R)": { mode: "closed", left: sb("R", 0, "x1"), right: sb("R", 0, "x1"), k: 0, w: 0, R: 1.5 },
+    "Tachyon, removed by GSO": { mode: "closed", left: sb("NS", 0, "x1"), right: sb("NS", 0, "x1"), k: 0, w: 0, R: 1.5 },
+    "Kaluza–Klein graviton (k = 1)": { mode: "closed", left: sb("NS", 0.5, "x1"), right: sb("NS", 0.5, "x1"), k: 1, w: 0, R: 1.5 },
+    "Winding graviton (w = 1)": { mode: "closed", left: sb("NS", 0.5, "x1"), right: sb("NS", 0.5, "x2"), k: 0, w: 1, R: 1.5 },
+    "Massive level α₋₁ψ₋½ ⊗ α̃₋₁ψ̃₋½": { mode: "closed", left: sb("NS", 0.5, "x1", 1, 1, "x1"), right: sb("NS", 0.5, "x2", 1, 1, "x2"), k: 0, w: 0, R: 1.5 },
+    "Open: photon γ": { mode: "open", left: sb("NS", 0.5, "x1"), L: 0, R: 1.5 },
+    "Open: photino λ": { mode: "open", left: sb("R", 0, "x1"), L: 0, R: 1.5 },
+    "Open: W± boson (stretched)": { mode: "open", left: sb("NS", 0.5, "x1"), L: 4, R: 1.5 },
+    "Open: W-ino W̃± (stretched)": { mode: "open", left: sb("R", 0, "x1"), L: 4, R: 1.5 },
+    "Open: brane-position scalar φ": { mode: "open", left: sb("NS", 0.5, "y"), L: 0, R: 1.5 },
+    "Open: tachyon, removed by GSO": { mode: "open", left: sb("NS", 0, "x1"), L: 0, R: 1.5 },
+  };
+  const presets = () => (cfg.theory === "super" ? SUPER_PRESETS : PRESETS);
+
+  let cfg = { theory: "bosonic", type: "IIB", gso: true, mode: "closed", left: bank(1, 1, "x1"), right: bank(1, 1, "x1"), k: 0, w: 0, R: 1.5, L: 0 };
   let tau = 0, playing = true, lastT = performance.now(), dirty = true;
 
   // ---------- controls ----------
@@ -29,24 +52,48 @@
     return `<div class="bank" id="${id}"><h2 style="margin:.3rem 0">${title}</h2>
       <div class="ctl"><label>Mode number n <b id="${id}-n-v"></b></label><input type="range" id="${id}-n" min="1" max="4" step="1"></div>
       <div class="ctl"><label>Quanta q <b id="${id}-q-v"></b></label><input type="range" id="${id}-q" min="0" max="3" step="1"></div>
-      <div class="ctl row"><label style="flex:1">Polarization</label><select id="${id}-pol">${opts}</select></div></div>`;
+      <div class="ctl row"><label style="flex:1">Polarization</label><select id="${id}-pol">${opts}</select></div>
+      <div class="super-only">
+        <div class="ctl row"><label style="flex:1">Fermion sector</label><select id="${id}-sec"><option value="NS">NS (antiperiodic)</option><option value="R">R (periodic)</option></select></div>
+        <div class="ctl row"><label style="flex:1">Fermion ψ</label><select id="${id}-r"></select></div>
+        <div class="ctl row"><label style="flex:1">ψ polarization</label><select id="${id}-fpol">${opts}</select></div>
+      </div></div>`;
   }
   $("banks").innerHTML = bankHTML("left", "Left movers α") + bankHTML("right", "Right movers α̃");
 
-  Object.keys(PRESETS).forEach((k) => $("preset").insertAdjacentHTML("beforeend", `<option>${k}</option>`));
-  $("preset").insertAdjacentHTML("afterbegin", `<option value="" disabled>(choose a state)</option>`);
+  function fillPresets() {
+    $("preset").innerHTML = `<option value="" disabled>(choose a state)</option>` +
+      Object.keys(presets()).map((k) => `<option>${k}</option>`).join("");
+  }
+  fillPresets();
 
   function syncControls() {
     for (const id of ["R", "k", "w", "L"]) $(id).value = cfg[id];
     for (const b of ["left", "right"]) {
       $(`${b}-n`).value = cfg[b].n; $(`${b}-q`).value = cfg[b].q; $(`${b}-pol`).value = cfg[b].pol;
+      $(`${b}-sec`).value = cfg[b].sector; $(`${b}-fpol`).value = cfg[b].fpol;
+      $(`${b}-r`).innerHTML = FERMION_MODES[cfg[b].sector].map(([v, t]) => `<option value="${v}">${t}</option>`).join("");
+      $(`${b}-r`).value = cfg[b].r;
     }
-    const open = cfg.mode === "open";
+    const open = cfg.mode === "open", sup = cfg.theory === "super";
     $("m-closed").classList.toggle("on", !open); $("m-open").classList.toggle("on", open);
-    document.querySelectorAll(".closed-only").forEach((e) => (e.style.display = open ? "none" : ""));
-    document.querySelectorAll(".open-only").forEach((e) => (e.style.display = open ? "" : "none"));
+    $("t-bos").classList.toggle("on", !sup); $("t-sup").classList.toggle("on", sup);
+    $("ty-IIA").classList.toggle("on", cfg.type === "IIA"); $("ty-IIB").classList.toggle("on", cfg.type === "IIB");
+    $("gso").checked = cfg.gso;
+    document.querySelectorAll(".closed-only, .open-only, .super-only").forEach((e) => {
+      const c = e.classList;
+      const hide = (c.contains("closed-only") && open) || (c.contains("open-only") && !open) || (c.contains("super-only") && !sup);
+      e.style.display = hide ? "none" : "";
+    });
     $("right").style.display = open ? "none" : "";
-    $("left").querySelector("h2").textContent = open ? "Oscillator α (ends tie left and right movers together)" : "Left movers α";
+    const ab = sup ? "α, ψ" : "α";
+    $("left").querySelector("h2").textContent = open ? `Oscillators ${ab} (ends tie left and right movers together)` : `Left movers ${ab}`;
+    $("right").querySelector("h2").textContent = sup ? "Right movers α̃, ψ̃" : "Right movers α̃";
+    $("tdual").textContent = sup ? "T-duality: R → 1/R, k ↔ w, IIA ↔ IIB" : "T-duality: R → 1/R, k ↔ w";
+    $("subtitle").textContent = sup
+      ? `Type ${cfg.type} superstring on a circle of radius R, in units α′ = 1. Each knob setting is one quantum state.`
+      : "Bosonic string on a circle of radius R, in units α′ = 1. Each knob setting is one quantum state.";
+    $("note").textContent = sup ? SUPER_NOTE : BOSONIC_NOTE;
     $("R-v").textContent = Number(cfg.R.toFixed(2)) + (Math.abs(cfg.R - 1) < 1e-9 ? " (self-dual)" : "");
     $("k-v").textContent = cfg.k; $("w-v").textContent = cfg.w; $("L-v").textContent = cfg.L.toFixed(1);
     for (const b of ["left", "right"]) { $(`${b}-n-v`).textContent = cfg[b].n; $(`${b}-q-v`).textContent = cfg[b].q; }
@@ -59,7 +106,11 @@
   function readControls(el) {
     if (["R", "k", "w", "L"].includes(el.id)) cfg[el.id] = Number(el.value);
     for (const b of ["left", "right"]) {
-      if (el.id.startsWith(`${b}-`)) cfg[b] = bank(Number($(`${b}-n`).value), Number($(`${b}-q`).value), $(`${b}-pol`).value);
+      if (!el.id.startsWith(`${b}-`)) continue;
+      const sector = $(`${b}-sec`).value;
+      // A new sector starts at its lowest fermion mode: psi_{-1/2} in NS, the spinor ground state in R.
+      const r = el.id === `${b}-sec` ? (sector === "NS" ? 0.5 : 0) : Number($(`${b}-r`).value);
+      cfg[b] = bank(Number($(`${b}-n`).value), Number($(`${b}-q`).value), $(`${b}-pol`).value, sector, r, $(`${b}-fpol`).value);
     }
     $("preset").value = "";
     syncControls(); updatePanel();
@@ -68,10 +119,19 @@
     el.addEventListener("input", () => (el.id === "spd" ? syncControls() : readControls(el)))
   );
   $("preset").addEventListener("change", (e) => {
-    const p = PRESETS[e.target.value];
-    cfg = { ...cfg, k: 0, w: 0, L: 0, right: bank(1, 0, "x1"), ...structuredClone(p) };
+    const p = presets()[e.target.value];
+    cfg = { ...cfg, k: 0, w: 0, L: 0, right: cfg.theory === "super" ? sb("NS", 0.5, "x1") : bank(1, 0, "x1"), ...structuredClone(p) };
     syncControls(); updatePanel(); $("preset").value = e.target.value;
   });
+  function setTheory(theory) {
+    cfg.theory = theory; fillPresets();
+    $("preset").value = Object.keys(presets())[0];
+    $("preset").dispatchEvent(new Event("change"));
+  }
+  $("t-bos").onclick = () => setTheory("bosonic");
+  $("t-sup").onclick = () => setTheory("super");
+  for (const t of ["IIA", "IIB"]) $(`ty-${t}`).onclick = () => { cfg.type = t; syncControls(); updatePanel(); };
+  $("gso").onchange = () => { cfg.gso = $("gso").checked; syncControls(); updatePanel(); };
   $("m-closed").onclick = () => { cfg.mode = "closed"; syncControls(); updatePanel(); };
   $("m-open").onclick = () => { cfg.mode = "open"; syncControls(); updatePanel(); };
   $("tdual").onclick = () => {
@@ -82,6 +142,15 @@
 
   // ---------- readouts & equations ----------
   const sub = (s) => s.replace(/_([^\s(+]+)/g, "<sub>$1</sub>");
+  // Halves print as fractions (½, 3/2); anything else as a decimal.
+  const hf = (x) => {
+    if (Math.abs(x - Math.round(x)) < 1e-9) return String(Math.round(x)).replace("-", "−");
+    const t = Math.round(2 * x);
+    if (Math.abs(2 * x - t) > 1e-9) return f(x, 3);
+    return (t < 0 ? "−" : "") + (Math.abs(t) === 1 ? "½" : `${Math.abs(t)}/2`);
+  };
+  const BOSONIC_NOTE = $("note").textContent;
+  const SUPER_NOTE = "This is the Type II superstring in the RNS formalism (10-D; the GSO projection removes the tachyon) with one dimension curled into a circle. KKLT is built on Type IIB, on a 6-D Calabi–Yau rather than one circle. The massless states are fermion ψ quanta with X at rest, so CH 1 shows a point for them and CH 5 shows ψ. ψ is Grassmann-valued, so CH 5 draws it as a turning phase, an analogy; the twist it shows (NS antiperiodic, R periodic) is exact. T-duality on the circle maps Type IIA on radius R to Type IIB on α′/R.";
   const f = (x, d = 2) => (Math.abs(x) < 5e-13 ? "0" : Number(x.toFixed(d)).toString());
   const sgn = (x, d = 2) => (x < 0 ? `− ${f(-x, d)}` : `+ ${f(x, d)}`);
   let prevTerms = {};
@@ -105,7 +174,59 @@
   const oscTerm = (b, arg, trig) =>
     b.q === 0 ? "0" : `${f(S.amplitude(b))} ${trig} ${b.n === 1 ? "" : b.n}(${arg})`;
 
+  const fSym = (p) => ({ x1: "ψ<sup>1</sup>", x2: "ψ<sup>2</sup>", y: "ψ<sup>y</sup>" })[p];
+  const fermTerm = (b, arg) =>
+    b.r > 0 ? `ψ<sub>−${hf(b.r)}</sub> e<sup>−i${hf(b.r)}(${arg})</sup>` : b.sector === "R" ? "ψ<sub>0</sub> (zero mode: spinor)" : "0";
+  const secNote = (b) => `<span class="num">(${b.sector}: r ∈ ${b.sector === "NS" ? "ℤ + ½" : "ℤ"})</span>`;
+  const gsoMark = (b) => (S.gsoKept(cfg, b) ? '<span class="ok">✓</span>' : '<span class="bad">✗</span>');
+
+  function superEquations(st) {
+    const L = cfg.left, Rb = cfg.right, a = S.intercept(cfg, L), at = S.intercept(cfg, Rb);
+    const gsoLine = (sides) => [["", "GSO:"], ["gso", sides.map(([lab, b]) => `${lab} ${b.sector} ${gsoMark(b)}`).join(", ")],
+      ["", `<span class="num">${cfg.gso ? "NS needs odd ψ number; R keeps one chirality" : "projection off"}</span>`]];
+    if (cfg.mode === "open") {
+      return renderEq([
+        [["", "<i>y</i>(σ,τ) = <i>y</i><sub>A</sub> +"], ["L", `(${f(cfg.L, 1)}/π)σ`], ["", "+ δy,"], ["", '<span class="num">Dirichlet: both ends fixed on branes</span>']],
+        [["", `${polSym(L.pol)} ⊃`], ["osc", L.pol === "y" ? `${oscTerm(L, "τ", "cos")}·sin ${L.n === 1 ? "" : L.n}σ` : `${oscTerm(L, "τ", "cos")}·cos ${L.n === 1 ? "" : L.n}σ`]],
+        [["", `${fSym(L.fpol)} ⊃`], ["fL", fermTerm(L, "τ+σ")], ["", secNote(L)]],
+        [["", "α′M² = (<i>L</i>/2π)² + <i>N</i> − <i>a</i> ="], ["Lm", f((cfg.L / (2 * Math.PI)) ** 2, 3)], ["", "+"], ["N", hf(st.N)], ["", "−"], ["a", hf(a)], ["", "="], ["m2", `<b>${f(st.m2, 3)}</b>`]],
+        [["", "<i>N</i> = <i>nq</i> + <i>r</i> ="], ["Nn", `${L.n}·${L.q} + ${hf(L.r)}`], ["", `, <i>a</i> = ½ (NS), 0 (R)`]],
+        gsoLine([["", L]]),
+      ]);
+    }
+    const ex = st.N - a - (st.Nt - at), lm = Math.abs(ex - cfg.k * cfg.w) < 1e-9;
+    renderEq([
+      [["", "<i>y</i>(σ,τ) = <i>y</i><sub>0</sub> + α′(<i>k</i>/<i>R</i>)τ + <i>wR</i>σ + δy ="], ["kR", `${f(cfg.k / cfg.R)}τ`], ["wR", sgn(cfg.w * cfg.R) + "σ"], ["", "+ δy"]],
+      [["", `${polSym(L.pol)} ⊃`], ["oL", oscTerm(L, "τ+σ", "cos")], ["", `&nbsp; ${polSym(Rb.pol)} ⊃`], ["oR", oscTerm(Rb, "τ−σ", "cos")]],
+      [["", `${fSym(L.fpol)} ⊃`], ["fL", fermTerm(L, "τ+σ")], ["", secNote(L)]],
+      [["", `${fSym(Rb.fpol).replace("ψ", "ψ̃")} ⊃`], ["fR", fermTerm(Rb, "τ−σ")], ["", secNote(Rb)]],
+      [["", "α′M² = <i>k</i>²/<i>R</i>² + <i>w</i>²<i>R</i>² + 2(<i>N</i> − <i>a</i> + <i>Ñ</i> − <i>ã</i>), <span class=\"num\">a = ½ (NS), 0 (R)</span>"]],
+      [["", "&nbsp;&nbsp;="], ["k2", f((cfg.k / cfg.R) ** 2, 3)], ["", "+"], ["w2", f((cfg.w * cfg.R) ** 2, 3)], ["", "+ 2("],
+        ["N", hf(st.N)], ["", "−"], ["a", hf(a)], ["", "+"], ["Nt", hf(st.Nt)], ["", "−"], ["at", hf(at)], ["", ") ="], ["m2", `<b>${f(st.m2, 3)}</b>`]],
+      [["", "<i>N</i> = <i>nq</i> + <i>r</i> ="], ["Nn", `${L.n}·${L.q} + ${hf(L.r)}`], ["", ", <i>Ñ</i> ="], ["Ntn", `${Rb.n}·${Rb.q} + ${hf(Rb.r)}`]],
+      [["", "(<i>N</i> − <i>a</i>) − (<i>Ñ</i> − <i>ã</i>) ="], ["lm", `${hf(ex)} ${lm ? "=" : "≠"} ${cfg.k * cfg.w} = kw <span class="${lm ? "ok" : "bad"}">${lm ? "✓" : "✗"}</span>`]],
+      gsoLine([["left", L], ["right", Rb]]),
+    ]);
+  }
+
+  function ladder(st) {
+    const sides = cfg.mode === "open" ? [["ψ", cfg.left, st.N]] : [["left", cfg.left, st.N], ["right", cfg.right, st.Nt]];
+    $("ladder").innerHTML = "<h2>GSO mask: levels N on each side</h2>" + sides.map(([lab, b, N]) => {
+      const levels = b.sector === "NS" ? [0, 0.5, 1, 1.5, 2, 2.5] : [0, 1, 2, 3];
+      const chips = levels.map((n) => {
+        const kept = !cfg.gso || b.sector === "R" || n % 1 !== 0;
+        return `<span class="chip ${kept ? "keep" : "drop"}${Math.abs(n - N) < 1e-9 ? " cur" : ""}">${hf(n)}</span>`;
+      }).join("");
+      const note = b.sector === "R"
+        ? "R: every level kept, with one spinor chirality (16 of 32 components)"
+        : cfg.gso ? "NS: half-integer N kept (odd ψ number); integer N removed" : "NS: projection off, all kept";
+      const here = levels.some((n) => Math.abs(n - N) < 1e-9) ? "" : ` · this state: N = ${hf(N)}`;
+      return `<div class="lad"><span class="lab">${lab} ${b.sector}</span>${chips}<span class="lnote">${note}${here}</span></div>`;
+    }).join("");
+  }
+
   function equations(st) {
+    if (cfg.theory === "super") return superEquations(st);
     const L = cfg.left, Rb = cfg.right;
     if (cfg.mode === "open") {
       const lines = [
@@ -136,20 +257,26 @@
     $("p-sym").style.fontSize = st.symbol.length > 12 ? "2rem" : "";
     $("p-sym").classList.toggle("bad", !st.physical || st.m2 < -1e-9);
     $("p-name").textContent = st.name;
-    $("p-detail").textContent = st.parts && st.parts.length > 1 ? "superposition, split into:" : st.detail;
+    $("p-detail").textContent = st.parts && st.parts.length > 1 ? (st.parts[0].share ? "64 states at this level, split into:" : "superposition, split into:") : st.detail;
     $("p-parts").innerHTML = st.parts && st.parts.length > 1
-      ? st.parts.map((p) => `<li><span>${p.name}<br><span style="color:var(--dim);font-size:.75rem">${p.detail}</span></span><span class="s">${sub(p.symbol)} · 50%</span></li>`).join("")
+      ? st.parts.map((p) => `<li><span>${p.name}<br><span style="color:var(--dim);font-size:.75rem">${p.detail}</span></span><span class="s">${sub(p.symbol)} · ${p.share ? `${p.share} states` : "50%"}</span></li>`).join("")
       : "";
     $("r-m2").textContent = f(st.m2, 3);
     $("r-m").textContent = st.m2 < -1e-9 ? `${f(Math.sqrt(-st.m2), 3)} i (imaginary)` : f(Math.sqrt(Math.max(0, st.m2)), 3);
-    $("r-n").textContent = cfg.mode === "open" ? `${st.N}` : `${st.N}, ${st.Nt}`;
+    $("r-n").textContent = cfg.mode === "open" ? hf(st.N) : `${hf(st.N)}, ${hf(st.Nt)}`;
+    const sup = cfg.theory === "super";
+    $("r-lm-l").textContent = sup ? "Level matching N − a = Ñ − ã + kw" : "Level matching N − Ñ = kw";
+    $("r-stat").textContent = `${cfg.mode === "open" ? cfg.left.sector : `${cfg.left.sector}–${cfg.right.sector}`} · ${st.fermion ? "fermion" : "boson"}`;
+    $("r-dim").textContent = `${sup ? 10 : 26} (3 drawn: x¹, x², y)`;
+    $("r-dual").textContent = `${f(cfg.R, 3)} · ${f(1 / cfg.R, 3)}`;
+    if (sup) ladder(st);
     const lm = S.levelMatched(cfg);
     $("r-lm").innerHTML = `<span class="${lm ? "ok" : "bad"}">${lm ? "satisfied" : "violated"}</span>`;
     equations(st);
   }
 
   // ---------- scope drawing ----------
-  const bg = $("bg"), fg = $("fg"), tr = $("trace");
+  const bg = $("bg"), fg = $("fg"), tr = $("trace"), fe = $("ferm");
   function fit(c) {
     const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
     c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
@@ -186,7 +313,7 @@
         ctx.fillStyle = "#ffcf4a"; ctx.fillText(lab, lx - 22, ly + (lab === "brane A" ? -4 : 12));
       }
     }
-    trace.dims = fit(tr);
+    trace.dims = fit(tr); trace.fdims = fit(fe);
     fg.getContext("2d").clearRect(0, 0, W, H);
     dirty = false;
   }
@@ -195,11 +322,12 @@
   // 3-D view: the compact circle lies flat, x¹ points out from it and x² points up. Drag turns it.
   const view = { yaw: 0.9, pitch: 0.55, drag: null };
   const ring = (th, out, up) => { const r = geo.rho + out; return [r * Math.cos(th), up, r * Math.sin(th)]; };
-  function proj([X, Y, Z]) {
+  function rot([X, Y, Z]) {
     const cy = Math.cos(view.yaw), sy = Math.sin(view.yaw), cp = Math.cos(view.pitch), sp = Math.sin(view.pitch);
     const x = X * cy - Z * sy, z = X * sy + Z * cy;
-    return [geo.cx + x, geo.cy - (Y * cp - z * sp), Y * sp + z * cp];
+    return [x, -(Y * cp - z * sp), Y * sp + z * cp];
   }
+  const proj = (P) => { const [x, y, d] = rot(P); return [geo.cx + x, geo.cy + y, d]; };
   // A loop with no winding and no x² oscillator folds flat onto a doubled line; only then is it
   // drawn slightly opened (OPEN · sin σ along x²) so it still reads as a closed loop.
   const OPEN = 0.35;
@@ -243,6 +371,10 @@
         ctx.beginPath(); ctx.arc(x + (Math.random() - 0.5) * 6, y + (Math.random() - 0.5) * 6, 1.6, 0, 2 * Math.PI); ctx.fill();
       }
       ctx.fillStyle = "#39ff9c"; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 2 * Math.PI); ctx.fill();
+      if (cfg.theory === "super") {
+        ctx.shadowBlur = 0; ctx.fillStyle = "#ff7ad9"; ctx.font = "11px ui-monospace, monospace";
+        ctx.fillText("X at rest: this state vibrates only in ψ (CH 5)", 10, 32);
+      }
     } else {
       ctx.strokeStyle = "#39ff9c"; ctx.lineWidth = 2;
       ctx.beginPath();
@@ -256,6 +388,53 @@
     }
     ctx.shadowBlur = 0;
     drawTrace(pts);
+    if (cfg.theory === "super") drawFermions();
+  }
+
+  // Each fermion field is drawn as a band around the worldsheet circle σ whose cross-bar turns by
+  // the phase r(τ ± σ). Over one loop it turns by 2πr: a half-turn (Möbius) for NS, whole turns for R.
+  function drawFermions() {
+    const [W, H] = trace.fdims, ctx = fe.getContext("2d");
+    ctx.fillStyle = "#05080a"; ctx.fillRect(0, 0, W, H);
+    const open = cfg.mode === "open";
+    const sides = open ? [["ψ, open string (σ doubled to 2π)", cfg.left, 1]] : [["ψ, left movers", cfg.left, 1], ["ψ̃, right movers", cfg.right, -1]];
+    sides.forEach(([title, b, dir], i) => {
+      const cx = (W * (i + 0.5)) / sides.length, cy = H * 0.45;
+      const rho = Math.min(W / sides.length / 2, H / 2) * 0.62, h = rho * 0.3;
+      const empty = b.r === 0, r = empty && b.sector === "NS" ? 0.5 : b.r;
+      const alpha = empty && b.sector === "NS" ? 0.25 : 0.85;
+      const at = (sg) => {
+        const th = dir > 0 ? r * (tau + sg) : r * (tau - sg), c = Math.cos(sg), sn = Math.sin(sg);
+        const C = [rho * c, 0, rho * sn], u = [Math.sin(th) * c, Math.cos(th), Math.sin(th) * sn];
+        return [C, u];
+      };
+      const P = (V) => { const [x, y, d] = rot(V); return [cx + x, cy + y, d]; };
+      const quads = [], M = 96;
+      for (let j = 0; j < M; j++) {
+        const [C0, u0] = at((2 * Math.PI * j) / M), [C1, u1] = at((2 * Math.PI * (j + 1)) / M);
+        for (const sgn of [1, -1]) {
+          const pts = [C0, C0.map((v, k) => v + sgn * h * u0[k]), C1.map((v, k) => v + sgn * h * u1[k]), C1].map(P);
+          quads.push({ pts, d: pts.reduce((m, q) => m + q[2], 0) / 4, color: sgn > 0 ? "255,207,74" : "74,216,255" });
+        }
+      }
+      quads.sort((a, b2) => a.d - b2.d);
+      for (const q of quads) {
+        ctx.fillStyle = `rgba(${q.color},${alpha})`;
+        ctx.beginPath(); q.pts.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.fill();
+      }
+      const [C, u] = at(0), a0 = P(C.map((v, k) => v - h * 1.25 * u[k])), a1 = P(C.map((v, k) => v + h * 1.25 * u[k]));
+      ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.stroke();
+      ctx.fillStyle = "#d8f5ea"; ctx.font = "11px ui-monospace, monospace"; ctx.textAlign = "center";
+      ctx.fillText(title, cx, 13);
+      const ns = b.sector === "NS";
+      const mode = empty ? (ns ? "empty: lowest mode r = ½ shown faint" : "zero mode: the spinor ground state")
+        : `mode ψ₋${hf(b.r)}: ${hf(b.r)} turn per loop`;
+      ctx.fillStyle = ns ? "#ff7ad9" : "#39ff9c";
+      ctx.fillText(ns ? "NS: ψ(σ+2π) = −ψ(σ), colours swap at the seam" : "R: ψ(σ+2π) = +ψ(σ), colours match at the seam", cx, H - 22);
+      ctx.fillStyle = "#6b8f84"; ctx.fillText(mode, cx, H - 8);
+      ctx.textAlign = "left";
+    });
   }
 
   function drawTrace(pts) {
@@ -265,12 +444,19 @@
     const span = pts[pts.length - 1].s, scale = H / 2 / 3.2;
     const zero = cfg.mode === "open" ? (p) => (cfg.L * p.s) / Math.PI : (p) => (cfg.k / cfg.R) * tau + cfg.w * cfg.R * p.s;
     const series = [["x1", "#39ff9c", (p) => p.x1], ["x2", "#ffcf4a", (p) => p.x2], ["y", "#4ad8ff", (p) => p.y - zero(p)]];
-    for (const [, color, get] of series) {
+    if (cfg.theory === "super") {
+      const L = cfg.left, Rb = cfg.right;
+      if (L.r > 0) series.push(["psi", "#ff7ad9", (p) => 1.5 * Math.cos(L.r * (tau + p.s))]);
+      if (cfg.mode === "closed" && Rb.r > 0) series.push(["psit", "#ff7ad9", (p) => 1.5 * Math.cos(Rb.r * (tau - p.s)), [5, 4]]);
+    }
+    for (const [, color, get, dash] of series) {
+      ctx.setLineDash(dash || []);
       ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.shadowColor = color; ctx.shadowBlur = 6;
       ctx.beginPath();
       pts.forEach((p, i) => { const x = (p.s / span) * W, y = H / 2 - get(p) * scale; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
       ctx.stroke();
     }
+    ctx.setLineDash([]);
     ctx.shadowBlur = 0; ctx.fillStyle = "#6b8f84"; ctx.font = "11px ui-monospace, monospace";
     ctx.fillText("σ = 0", 4, H - 6); ctx.fillText(cfg.mode === "open" ? "σ = π" : "σ = 2π", W - 44, H - 6);
     ctx.fillText(`τ = ${tau.toFixed(2)}`, W - 80, 14);
