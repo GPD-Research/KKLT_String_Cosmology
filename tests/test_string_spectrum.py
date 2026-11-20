@@ -116,6 +116,8 @@ def test_superstring_without_gso_keeps_both_chiralities():
     assert sum(p["share"] for p in rr["parts"]) == 256
     f = ss.classify(sup(closed(sbank(), sbank("R", 0)), gso=False))
     assert sum(p["share"] for p in f["parts"]) == 128
+    y = ss.classify(sup(closed(sbank(fpol="y"), sbank("R", 0)), gso=False))
+    assert y["symbol"] == "ψ_y" and "both chiralities" in y["detail"]
 
 
 def test_superstring_has_no_self_dual_gauge_bosons():

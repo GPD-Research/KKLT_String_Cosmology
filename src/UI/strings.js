@@ -67,12 +67,12 @@
             state("Ramond–Ramond 4-form", "C_4", "35 of the 64 R–R states, self-dual; couples to D3-branes like KKLT's anti-D3", { share: 35 }),
           ];
     const ns = L.sector === "NS" ? L : Rb;
+    const chir = !cfg.gso ? "both chiralities without GSO" : A ? "opposite chirality to its mirror (Type IIA)" : "same chirality as its mirror (Type IIB)";
+    if (compact(ns.fpol)) return [state("Spin-½ fermion", "ψ_y", `the gravitino's part along the circle, spin ½ in 9-D; ${chir}`)];
     if (!cfg.gso) return [
       state("Gravitini", "ψ_μ", "spin 3/2, both chiralities without GSO; 112 of 128 states", { share: 112 }),
       state("Dilatini", "λ", "spin ½, both chiralities; 16 of 128 states", { share: 16 }),
     ];
-    const chir = A ? "opposite chirality to its mirror (Type IIA)" : "same chirality as its mirror (Type IIB)";
-    if (compact(ns.fpol)) return [state("Spin-½ fermion", "ψ_y", `the gravitino's part along the circle, spin ½ in 9-D; ${chir}`)];
     return [
       state("Gravitino", "ψ_μ", `spin 3/2, the graviton's superpartner; 56 of 64 states; ${chir}`, { share: 56 }),
       state("Dilatino", "λ", "spin ½, the dilaton's superpartner; 8 of 64 states", { share: 8 }),

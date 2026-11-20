@@ -105,13 +105,18 @@ def _super_massless(cfg):
         ]
     ns = left if left["sector"] == "NS" else right
     if not cfg["gso"]:
+        chir = "both chiralities without GSO"
+    elif is_a:
+        chir = "opposite chirality to its mirror (Type IIA)"
+    else:
+        chir = "same chirality as its mirror (Type IIB)"
+    if _compact(ns["fpol"]):
+        return [_state("Spin-½ fermion", "ψ_y", f"the gravitino's part along the circle, spin ½ in 9-D; {chir}")]
+    if not cfg["gso"]:
         return [
             _state("Gravitini", "ψ_μ", "spin 3/2, both chiralities without GSO; 112 of 128 states", share=112),
             _state("Dilatini", "λ", "spin ½, both chiralities; 16 of 128 states", share=16),
         ]
-    chir = "opposite chirality to its mirror (Type IIA)" if is_a else "same chirality as its mirror (Type IIB)"
-    if _compact(ns["fpol"]):
-        return [_state("Spin-½ fermion", "ψ_y", f"the gravitino's part along the circle, spin ½ in 9-D; {chir}")]
     return [
         _state("Gravitino", "ψ_μ", f"spin 3/2, the graviton's superpartner; 56 of 64 states; {chir}", share=56),
         _state("Dilatino", "λ", "spin ½, the dilaton's superpartner; 8 of 64 states", share=8),
