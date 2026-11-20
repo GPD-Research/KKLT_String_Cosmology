@@ -36,6 +36,8 @@ It animates a bosonic string on a circle of radius R, with α′ = 1. You can vi
 
 The display names each state with its symbol, for example Graviton g<sub>μν</sub>, Kalb–Ramond B<sub>μν</sub>, Radion σ, Photon γ, W± or Tachyon T. Massive string levels with no named particle are labeled as such. The live equations show the mode expansion, the mass formula α′M² = k²/R² + w²R² + 2(N + Ñ − 2) (open: (L/2π)² + N − 1) and the level-matching check.
 
+A switch at the top changes the bosonic string (26-D) to the Type II superstring (10-D, RNS formalism), with a Type IIA/IIB choice and a GSO projection checkbox. Each side then also carries a worldsheet fermion ψ in the NS (antiperiodic, half-integer modes) or R (periodic, integer modes) sector. The mass formula becomes α′M² = k²/R² + w²R² + 2(N − a + Ñ − ã), with a = ½ for NS and 0 for R (open: (L/2π)² + N − a). The GSO projection removes the tachyon, and a level ladder shows which levels it keeps. Named states include the gravitino ψ<sub>μ</sub> and dilatino λ, the Ramond–Ramond forms (C₁, C₃ in IIA; C₀, C₂, C₄ in IIB), the photino and the W-ino. A worldsheet-fermion channel draws ψ as a band around σ that closes with a Möbius twist in the NS sector and seamlessly in the R sector. T-duality on the circle also swaps IIA and IIB.
+
 The physics lives in `src/UI/strings.js`, and `src/analysis/string_spectrum.py` mirrors it. Run `make test-python` to check that the two agree.
 
 ## Repository layout
