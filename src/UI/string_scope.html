@@ -52,6 +52,9 @@
     .sprow { display:flex; flex-wrap:wrap; gap:.4rem 1rem; align-items:center; margin:.35rem 0; font-size:.78rem; color:var(--dim); }
     .sprow select, .sprow button { background:#0b1512; color:#d8f5ea; border:1px solid var(--line); border-radius:3px; font:inherit; padding:.1rem .25rem; }
     .sprow button.on { border-color:var(--phos); color:var(--phos); }
+    #hgrid { display:flex; flex-wrap:wrap; gap:.25rem; margin:.4rem 0; font-size:.78rem; }
+    #hgrid .chip { min-width:2.6rem; }
+    #hgrid .hn { width:100%; color:var(--dim); font-size:.74rem; }
     ul.feat { margin:.4rem 0 0; padding-left:1.1rem; font-size:.74rem; color:var(--dim); }
     ul.feat b { color:#d8f5ea; font-weight:normal; }
     .lad { display:flex; flex-wrap:wrap; align-items:center; gap:.25rem; margin:.3rem 0; font-size:.78rem; }
@@ -71,13 +74,19 @@
   <div class="wrap">
     <section class="panel" id="controls">
       <h2>Controls</h2>
-      <div class="ctl seg"><button id="t-bos" class="on">Bosonic 26-D</button><button id="t-sup">Superstring 10-D</button></div>
+      <div class="ctl seg"><button id="t-bos" class="on">Bosonic 26-D</button><button id="t-sup">Superstring 10-D</button><button id="t-m">M-theory 11-D</button></div>
       <div class="super-only">
         <div class="ctl seg"><button id="ty-IIA">Type IIA</button><button id="ty-IIB" class="on">Type IIB</button></div>
         <div class="ctl"><label style="justify-content:flex-start;gap:.4rem"><input type="checkbox" id="gso" checked> GSO projection (removes the tachyon)</label></div>
       </div>
-      <div class="ctl seg"><button id="m-closed" class="on">Closed loop</button><button id="m-open">Open string</button></div>
-      <div class="ctl"><label>Preset</label><select id="preset" style="width:100%"></select></div>
+      <div class="m-only">
+        <div class="ctl seg"><button id="br-M2" class="on">M2 wrapped on x¹⁰</button><button id="br-M5">M5 slice</button></div>
+        <div class="ctl"><label>String coupling g<sub>s</sub> <b id="gs-v"></b></label><input type="range" id="gs" min="0.05" max="3" step="0.05" value="0.3"></div>
+        <div class="ctl m2-only"><label>Momentum n around x¹⁰ (D0 charge) <b id="n11-v"></b></label><input type="range" id="n11" min="0" max="3" step="1" value="0"></div>
+        <div class="ctl m5-only"><label style="justify-content:flex-start;gap:.4rem"><input type="checkbox" id="sd"> Impose H = ⋆H (self-duality)</label></div>
+      </div>
+      <div class="ctl seg str-only"><button id="m-closed" class="on">Closed loop</button><button id="m-open">Open string</button></div>
+      <div class="ctl str-only"><label>Preset</label><select id="preset" style="width:100%"></select></div>
       <div class="ctl"><label>Radius R <b id="R-v"></b></label><input type="range" id="R" min="0.5" max="3" step="0.1" value="1.5"></div>
       <div class="closed-only">
         <div class="ctl"><label>KK momentum k <b id="k-v"></b></label><input type="range" id="k" min="-3" max="3" step="1" value="0"></div>
@@ -87,7 +96,7 @@
       <div class="open-only">
         <div class="ctl"><label>Brane separation L <b id="L-v"></b></label><input type="range" id="L" min="0" max="10" step="0.5" value="0"></div>
       </div>
-      <div id="banks"></div>
+      <div id="banks" class="str-only"></div>
       <div class="bank">
         <div class="ctl"><label>Scope speed (τ per second) <b id="spd-v"></b></label><input type="range" id="spd" min="0" max="3" step="0.1" value="1"></div>
         <div class="row"><button id="play" style="flex:1">Pause</button><select id="persist" style="flex:1"><option value="0.25">Short trails</option><option value="0.07">Long trails</option><option value="1">No trails</option></select></div>
@@ -95,10 +104,16 @@
     </section>
 
     <section class="panel">
-      <h2>CH 1: the string X. The dashed ring is the compact dimension y; x¹ points out from it and x² points up. Drag to rotate</h2>
+      <h2 id="ch1-h">CH 1: the string X. The dashed ring is the compact dimension y; x¹ points out from it and x² points up. Drag to rotate</h2>
       <div class="scope"><canvas id="bg"></canvas><canvas id="fg"></canvas></div>
-      <h2 style="margin-top:.6rem">CH 2–4: displacement vs σ</h2>
-      <div class="ch2"><canvas id="trace"></canvas>
+      <div class="m-only">
+        <h2 class="m5-only" style="margin-top:.6rem">M5 field strength H = dB: a 3-form on the 6-D worldvolume</h2>
+        <div class="m5-only" id="hgrid"></div>
+        <h2 style="margin-top:.6rem">11-D → Type IIA on the M-circle x¹⁰ (massless states)</h2>
+        <table class="read" id="red"></table>
+      </div>
+      <h2 class="str-only" style="margin-top:.6rem">CH 2–4: displacement vs σ</h2>
+      <div class="ch2 str-only"><canvas id="trace"></canvas>
         <span class="tag" style="left:8px;top:4px;color:var(--phos)">x¹ (radial)</span>
         <span class="tag" style="left:110px;top:4px;color:var(--amber)">x² (up)</span>
         <span class="tag" style="left:200px;top:4px;color:var(--cyan)">δy (along ring)</span>
@@ -107,12 +122,16 @@
       <div class="super-only">
         <h2 style="margin-top:.6rem">CH 5: worldsheet fermions ψ around σ (turns with CH 1)</h2>
         <div class="ch5"><canvas id="ferm"></canvas></div>
+      </div>
+      <div class="sm-only">
         <h2 style="margin-top:.6rem">CH 6: internal space. Its axes are components, not directions in space</h2>
-        <div class="ctl seg"><button id="sp-vec" class="on">ψ<sup>μ</sup> in ℝ¹⁰ (the RNS field)</button><button id="sp-spin">R ground state (a spinor)</button></div>
+        <div class="ctl seg super-only"><button id="sp-vec" class="on">ψ<sup>μ</sup> in ℝ¹⁰ (the RNS field)</button><button id="sp-spin">R ground state (a spinor)</button></div>
         <div class="sprow">
           <label>Rotate in plane <select id="sp-a"></select> <select id="sp-b"></select></label>
+          <label class="m-only">Gravitino channel <select id="sp-ch"></select></label>
           <label>Axes <select id="sp-x"></select> <select id="sp-y"></select> <select id="sp-z"></select></label>
         </div>
+        <div class="sprow" id="sp-dirs"></div>
         <div class="sprow">
           <label><input type="checkbox" id="sp-link"> θ follows the CH 1 drag</label>
           <button id="sp-cliff" class="spin-only">Show γᵃγᵇψ and γᵇγᵃψ</button>
@@ -129,7 +148,8 @@
         <div class="detail" id="p-detail"></div>
         <ul class="parts" id="p-parts"></ul>
       </div>
-      <table class="read">
+      <table class="read m-only" id="mread"></table>
+      <table class="read str-only">
         <tr><td>α′M²</td><td id="r-m2"></td></tr>
         <tr><td>Mass M (string units 1/√α′)</td><td id="r-m"></td></tr>
         <tr><td>Oscillator levels N, Ñ</td><td id="r-n"></td></tr>
@@ -139,13 +159,13 @@
         <tr class="closed-only"><td>Radius R · T-dual α′/R</td><td id="r-dual"></td></tr>
       </table>
       <div class="super-only" id="ladder"></div>
-      <h2>The math behind the trace</h2>
-      <div class="eq" id="eq"></div>
+      <h2 class="str-only">The math behind the trace</h2>
+      <div class="eq str-only" id="eq"></div>
       <p class="note" id="note">This is the textbook bosonic string (26-D, so it has a tachyon) with one dimension curled into a circle. It is not the full Calabi–Yau compactification of Type IIB KKLT. It shows how particles appear as string vibrations, and how the size of the extra dimension (the radion, a toy version of KKLT's volume modulus t) shifts the mass tower. Amplitudes show the classical coherent-state size, which is proportional to √(q/n).</p>
     </section>
   </div>
   <script src="spinors.js?v=3586bda9"></script>
-  <script src="strings.js?v=7e2c70c1"></script>
-  <script src="string_scope.js?v=4d464adb"></script>
+  <script src="strings.js?v=1566cd04"></script>
+  <script src="string_scope.js?v=a28cba18"></script>
 </body>
 </html>
