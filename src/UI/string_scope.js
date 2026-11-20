@@ -459,13 +459,15 @@
     ctx.fillStyle = "#05080a"; ctx.fillRect(0, 0, W, H);
     const theta = sp.link ? 2 * (view.yaw - sp.yaw0) : (0.5 * tau) % (4 * Math.PI);
     const ax = sp.axes[sp.mode], a = sp.a - 1, b = sp.b - 1;
-    const nsBank = cfg.left.sector === "NS" || cfg.mode === "open" ? cfg.left : cfg.right;
+    // Show an occupied ψ quantum (NS or R) if either side has one, otherwise the first NS side.
+    const banks = cfg.mode === "open" ? [cfg.left] : [cfg.left, cfg.right];
+    const nsBank = banks.find((bk) => bk.r > 0) || banks.find((bk) => bk.sector === "NS") || cfg.left;
     let state, at, note;
     if (vec) {
       const e = Array(10).fill(0); e[PSI_INDEX[nsBank.fpol]] = 1;
       at = (th) => { const v = e.slice(), c = Math.cos(th), s = Math.sin(th); v[sp.a] = c * e[sp.a] - s * e[sp.b]; v[sp.b] = s * e[sp.a] + c * e[sp.b]; return v; };
       state = at;
-      note = nsBank.sector === "NS" && nsBank.r > 0 ? `ψ${"¹²³⁴⁵⁶⁷⁸⁹"[PSI_INDEX[nsBank.fpol] - 1]}₋${hf(nsBank.r)} polarization` : "no ψ quantum in this state: its polarization direction is shown";
+      note = nsBank.r > 0 ? `ψ${"¹²³⁴⁵⁶⁷⁸⁹"[PSI_INDEX[nsBank.fpol] - 1]}₋${hf(nsBank.r)} polarization` : "no ψ quantum in this state: its polarization direction is shown";
     } else {
       const psi0 = groundSpinor();
       state = (th) => window.Spinors.rotate(G10, a, b, th, psi0);
