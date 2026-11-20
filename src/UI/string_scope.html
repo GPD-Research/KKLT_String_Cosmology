@@ -47,6 +47,13 @@
     .note { color:var(--dim); font-size:.75rem; margin-top:.6rem; }
     .ch5 { position:relative; width:100%; height:210px; margin-top:.6rem; }
     .ch5 canvas { position:absolute; inset:0; width:100%; height:100%; }
+    .ch6 { position:relative; width:100%; height:300px; margin-top:.4rem; }
+    .ch6 canvas { position:absolute; inset:0; width:100%; height:100%; }
+    .sprow { display:flex; flex-wrap:wrap; gap:.4rem 1rem; align-items:center; margin:.35rem 0; font-size:.78rem; color:var(--dim); }
+    .sprow select, .sprow button { background:#0b1512; color:#d8f5ea; border:1px solid var(--line); border-radius:3px; font:inherit; padding:.1rem .25rem; }
+    .sprow button.on { border-color:var(--phos); color:var(--phos); }
+    ul.feat { margin:.4rem 0 0; padding-left:1.1rem; font-size:.74rem; color:var(--dim); }
+    ul.feat b { color:#d8f5ea; font-weight:normal; }
     .lad { display:flex; flex-wrap:wrap; align-items:center; gap:.25rem; margin:.3rem 0; font-size:.78rem; }
     .lad .lab { width:5.5rem; color:var(--dim); }
     .chip { min-width:1.9rem; text-align:center; padding:.05rem .25rem; border:1px solid var(--line); border-radius:3px; }
@@ -100,6 +107,18 @@
       <div class="super-only">
         <h2 style="margin-top:.6rem">CH 5: worldsheet fermions ψ around σ (turns with CH 1)</h2>
         <div class="ch5"><canvas id="ferm"></canvas></div>
+        <h2 style="margin-top:.6rem">CH 6: internal space. Its axes are components, not directions in space</h2>
+        <div class="ctl seg"><button id="sp-vec" class="on">ψ<sup>μ</sup> in ℝ¹⁰ (the RNS field)</button><button id="sp-spin">R ground state (a spinor)</button></div>
+        <div class="sprow">
+          <label>Rotate in plane <select id="sp-a"></select> <select id="sp-b"></select></label>
+          <label>Axes <select id="sp-x"></select> <select id="sp-y"></select> <select id="sp-z"></select></label>
+        </div>
+        <div class="sprow">
+          <label><input type="checkbox" id="sp-link"> θ follows the CH 1 drag</label>
+          <button id="sp-cliff" class="spin-only">Show γᵃγᵇψ and γᵇγᵃψ</button>
+        </div>
+        <div class="ch6"><canvas id="spin"></canvas></div>
+        <ul class="feat" id="sp-feat"></ul>
       </div>
     </section>
 
@@ -125,7 +144,8 @@
       <p class="note" id="note">This is the textbook bosonic string (26-D, so it has a tachyon) with one dimension curled into a circle. It is not the full Calabi–Yau compactification of Type IIB KKLT. It shows how particles appear as string vibrations, and how the size of the extra dimension (the radion, a toy version of KKLT's volume modulus t) shifts the mass tower. Amplitudes show the classical coherent-state size, which is proportional to √(q/n).</p>
     </section>
   </div>
+  <script src="spinors.js?v=ca4452c1"></script>
   <script src="strings.js?v=7e2c70c1"></script>
-  <script src="string_scope.js?v=34e0495e"></script>
+  <script src="string_scope.js?v=a47a8844"></script>
 </body>
 </html>
