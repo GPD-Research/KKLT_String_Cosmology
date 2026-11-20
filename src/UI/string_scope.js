@@ -454,6 +454,7 @@
   };
   ["x", "y", "z"].forEach((k, j) => ($(`sp-${k}`).onchange = () => { sp.axes[sp.mode][j] = Number($(`sp-${k}`).value); }));
 
+  const spCache = {};
   function drawSpin() {
     const [W, H] = trace.sdims, ctx = spc.getContext("2d"), vec = sp.mode === "vec";
     ctx.fillStyle = "#05080a"; ctx.fillRect(0, 0, W, H);
@@ -469,8 +470,16 @@
       state = at;
       note = nsBank.r > 0 ? `ψ${"¹²³⁴⁵⁶⁷⁸⁹"[PSI_INDEX[nsBank.fpol] - 1]}₋${hf(nsBank.r)} polarization` : "no ψ quantum in this state: its polarization direction is shown";
     } else {
-      const psi0 = groundSpinor();
-      state = (th) => window.Spinors.rotate(G10, a, b, th, psi0);
+      // S(θ)ψ₀ = cos(θ/2) ψ₀ + sin(θ/2) γ_b γ_a ψ₀: both vectors are cached, so a frame costs no matrix work.
+      const key = `${spinChirality()}|${a}|${b}`;
+      if (spCache.key !== key) {
+        const psi0 = groundSpinor();
+        Object.assign(spCache, { key, psi0, w: window.Spinors.rotate(G10, a, b, Math.PI, psi0) });
+      }
+      state = (th) => {
+        const c = Math.cos(th / 2), sn = Math.sin(th / 2), { psi0, w } = spCache;
+        return psi0.map((x, i) => [c * x[0] + sn * w[i][0], c * x[1] + sn * w[i][1]]);
+      };
       at = (th) => state(th).flat();
       note = cfg.left.sector === "R" || (cfg.mode === "closed" && cfg.right.sector === "R") ? "R ground state" : "no R sector in this state: an R ground spinor is shown for reference";
     }
