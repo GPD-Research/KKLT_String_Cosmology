@@ -200,7 +200,27 @@
     ...(isSuper(cfg) ? { type: cfg.type === "IIA" ? "IIB" : "IIA" } : {}),
   });
 
-  const api = { massSquared, levelMatched, classify, shape, tDual, level, levelOf, intercept, gsoKept, amplitude };
+  // M-theory on a circle x¹⁰ of radius R11 is Type IIA at coupling g_s (α′ = 1):
+  //   R11 = g_s √α′, l_p = g_s^(1/3) √α′, T_M2 = 1/((2π)² l_p³), T_M5 = 1/((2π)⁵ l_p⁶).
+  // Wrapping the M2 on x¹⁰ gives the IIA string, 2πR11·T_M2 = 1/(2πα′), with no g_s left over;
+  // momentum n around x¹⁰ is n D0-branes, mass n/R11; the M5 on x¹⁰ is the D4, unwrapped the NS5.
+  function mTheory(gs, n = 0) {
+    const R11 = gs, lp = Math.cbrt(gs);
+    const tM2 = 1 / (TAU ** 2 * lp ** 3), tM5 = 1 / (TAU ** 5 * lp ** 6);
+    return {
+      R11, lp, tM2, tM5, d0Mass: 1 / gs, kkMass: n / R11,
+      tString: TAU * R11 * tM2, tD4: TAU * R11 * tM5, tNS5: tM5,
+      multiplet: [["Graviton", "g_MN", 44], ["3-form", "C_MNP", 84], ["Gravitino", "Ψ_M", 128]],
+      toIIA: [
+        ["g_MN", 44, [["g_μν", 35], ["C_μ (R–R 1-form)", 8], ["φ (dilaton)", 1]]],
+        ["C_MNP", 84, [["C_μνρ (R–R 3-form)", 56], ["B_μν (Kalb–Ramond)", 28]]],
+        ["Ψ_M", 128, [["two gravitini, opposite chirality", 112], ["two dilatini, opposite chirality", 16]]],
+      ],
+      h: { full: 20, selfDual: 10, b: 15 },
+    };
+  }
+
+  const api = { massSquared, levelMatched, classify, shape, tDual, level, levelOf, intercept, gsoKept, amplitude, mTheory };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Strings = api;
 })(this);

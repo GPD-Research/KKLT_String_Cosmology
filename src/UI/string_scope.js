@@ -43,7 +43,7 @@
   };
   const presets = () => (cfg.theory === "super" ? SUPER_PRESETS : PRESETS);
 
-  let cfg = { theory: "bosonic", type: "IIB", gso: true, mode: "closed", left: bank(1, 1, "x1"), right: bank(1, 1, "x1"), k: 0, w: 0, R: 1.5, L: 0 };
+  let cfg = { theory: "bosonic", type: "IIB", gso: true, mode: "closed", left: bank(1, 1, "x1"), right: bank(1, 1, "x1"), k: 0, w: 0, R: 1.5, L: 0, gs: 0.3, n11: 0, brane: "M2", sd: false };
   let tau = 0, playing = true, lastT = performance.now(), dirty = true;
 
   // ---------- controls ----------
@@ -75,14 +75,19 @@
       $(`${b}-r`).innerHTML = FERMION_MODES[cfg[b].sector].map(([v, t]) => `<option value="${v}">${t}</option>`).join("");
       $(`${b}-r`).value = cfg[b].r;
     }
-    const open = cfg.mode === "open", sup = cfg.theory === "super";
+    const open = cfg.mode === "open", sup = cfg.theory === "super", M = cfg.theory === "M";
     $("m-closed").classList.toggle("on", !open); $("m-open").classList.toggle("on", open);
-    $("t-bos").classList.toggle("on", !sup); $("t-sup").classList.toggle("on", sup);
+    $("t-bos").classList.toggle("on", cfg.theory === "bosonic"); $("t-sup").classList.toggle("on", sup); $("t-m").classList.toggle("on", M);
+    $("br-M2").classList.toggle("on", cfg.brane === "M2"); $("br-M5").classList.toggle("on", cfg.brane === "M5");
+    $("gs").value = cfg.gs; $("n11").value = cfg.n11; $("sd").checked = cfg.sd;
+    $("gs-v").textContent = cfg.gs.toFixed(2) + (cfg.gs < 1 ? " (weak: Type IIA)" : " (strong: M-theory)"); $("n11-v").textContent = cfg.n11;
     $("ty-IIA").classList.toggle("on", cfg.type === "IIA"); $("ty-IIB").classList.toggle("on", cfg.type === "IIB");
     $("gso").checked = cfg.gso;
-    document.querySelectorAll(".closed-only, .open-only, .super-only").forEach((e) => {
-      const c = e.classList;
-      const hide = (c.contains("closed-only") && open) || (c.contains("open-only") && !open) || (c.contains("super-only") && !sup);
+    document.querySelectorAll(".closed-only, .open-only, .super-only, .str-only, .m-only, .sm-only, .m2-only, .m5-only").forEach((e) => {
+      const c = e.classList, has = (k) => c.contains(k);
+      const hide = (has("closed-only") && (open || M)) || (has("open-only") && (!open || M)) || (has("super-only") && !sup) ||
+        (has("str-only") && M) || (has("m-only") && !M) || (has("sm-only") && !sup && !M) ||
+        (has("m2-only") && cfg.brane !== "M2") || (has("m5-only") && cfg.brane !== "M5");
       e.style.display = hide ? "none" : "";
     });
     $("right").style.display = open ? "none" : "";
@@ -90,10 +95,15 @@
     $("left").querySelector("h2").textContent = open ? `Oscillators ${ab} (ends tie left and right movers together)` : `Left movers ${ab}`;
     $("right").querySelector("h2").textContent = sup ? "Right movers α̃, ψ̃" : "Right movers α̃";
     $("tdual").textContent = sup ? "T-duality: R → 1/R, k ↔ w, IIA ↔ IIB" : "T-duality: R → 1/R, k ↔ w";
-    $("subtitle").textContent = sup
+    $("subtitle").textContent = M
+      ? "M-theory: 11-D, here on the circle y (radius R) and the M-circle x¹⁰ of radius R₁₁ = g_s√α′, in units α′ = 1."
+      : sup
       ? `Type ${cfg.type} superstring on a circle of radius R, in units α′ = 1. Each knob setting is one quantum state.`
       : "Bosonic string on a circle of radius R, in units α′ = 1. Each knob setting is one quantum state.";
-    $("note").textContent = sup ? SUPER_NOTE : BOSONIC_NOTE;
+    $("ch1-h").textContent = M
+      ? "CH 1: the brane. The dashed ring is the compact dimension y; x¹ points out from it and x² points up. Drag to rotate"
+      : "CH 1: the string X. The dashed ring is the compact dimension y; x¹ points out from it and x² points up. Drag to rotate";
+    $("note").textContent = M ? M_NOTE : sup ? SUPER_NOTE : BOSONIC_NOTE;
     $("R-v").textContent = Number(cfg.R.toFixed(2)) + (Math.abs(cfg.R - 1) < 1e-9 ? " (self-dual)" : "");
     $("k-v").textContent = cfg.k; $("w-v").textContent = cfg.w; $("L-v").textContent = cfg.L.toFixed(1);
     for (const b of ["left", "right"]) { $(`${b}-n-v`).textContent = cfg[b].n; $(`${b}-q-v`).textContent = cfg[b].q; }
@@ -104,7 +114,7 @@
   // Read only the control that moved: after T-duality R = 1/R may sit between slider steps, and
   // re-reading every slider would snap it and change the spectrum.
   function readControls(el) {
-    if (["R", "k", "w", "L"].includes(el.id)) cfg[el.id] = Number(el.value);
+    if (["R", "k", "w", "L", "gs", "n11"].includes(el.id)) cfg[el.id] = Number(el.value);
     for (const b of ["left", "right"]) {
       if (!el.id.startsWith(`${b}-`)) continue;
       const sector = $(`${b}-sec`).value;
@@ -124,12 +134,16 @@
     syncControls(); updatePanel(); $("preset").value = e.target.value;
   });
   function setTheory(theory) {
+    if (theory === "M") { cfg.theory = "M"; cfg.mode = "closed"; syncControls(); updatePanel(); return; }
     cfg.theory = theory; fillPresets();
     $("preset").value = Object.keys(presets())[0];
     $("preset").dispatchEvent(new Event("change"));
   }
   $("t-bos").onclick = () => setTheory("bosonic");
   $("t-sup").onclick = () => setTheory("super");
+  $("t-m").onclick = () => setTheory("M");
+  for (const br of ["M2", "M5"]) $(`br-${br}`).onclick = () => { cfg.brane = br; syncControls(); updatePanel(); };
+  $("sd").onchange = () => { cfg.sd = $("sd").checked; updatePanel(); };
   for (const t of ["IIA", "IIB"]) $(`ty-${t}`).onclick = () => { cfg.type = t; syncControls(); updatePanel(); };
   $("gso").onchange = () => { cfg.gso = $("gso").checked; syncControls(); updatePanel(); };
   $("m-closed").onclick = () => { cfg.mode = "closed"; syncControls(); updatePanel(); };
@@ -150,6 +164,7 @@
     return (t < 0 ? "−" : "") + (Math.abs(t) === 1 ? "½" : `${Math.abs(t)}/2`);
   };
   const BOSONIC_NOTE = $("note").textContent;
+  const M_NOTE = "M-theory has no complete formulation and no worked-out particle list. What is known is its 11-D supergravity limit (the 256 massless states above), its M2 and M5 branes, and its dualities: on a circle x¹⁰ it is Type IIA, with g_s = R₁₁/√α′. The M2 is drawn wrapped on y × x¹⁰; a 3-D slice cannot hold x¹⁰ separately, so it appears as the tube around the ring. The M5's worldvolume is 6-D; only a 2-D slice is drawn.";
   const SUPER_NOTE = "This is the Type II superstring in the RNS formalism (10-D; the GSO projection removes the tachyon) with one dimension curled into a circle. KKLT is built on Type IIB, on a 6-D Calabi–Yau rather than one circle. The massless states are fermion ψ quanta with X at rest, so CH 1 shows a point for them and CH 5 shows ψ. ψ is Grassmann-valued, so CH 5 draws it as a turning phase, an analogy; the twist it shows (NS antiperiodic, R periodic) is exact. T-duality on the circle maps Type IIA on radius R to Type IIB on α′/R.";
   const f = (x, d = 2) => (Math.abs(x) < 5e-13 ? "0" : Number(x.toFixed(d)).toString());
   const sgn = (x, d = 2) => (x < 0 ? `− ${f(-x, d)}` : `+ ${f(x, d)}`);
@@ -251,7 +266,47 @@
     ]);
   }
 
+  const fx = (x) => (x < 0.01 ? x.toExponential(2).replace("e-", "×10⁻").replace(/⁻(\d+)/, (_, d) => "⁻" + [...d].map((c) => "⁰¹²³⁴⁵⁶⁷⁸⁹"[c]).join("")) : f(x, 3));
+  function hGrid() {
+    const trip = [];
+    for (let a = 0; a < 6; a++) for (let b = a + 1; b < 6; b++) for (let c = b + 1; c < 6; c++) trip.push([a, b, c]);
+    const dual = (t) => [0, 1, 2, 3, 4, 5].filter((i) => !t.includes(i));
+    const firsts = trip.filter((t) => t[0] === 0), hue = (t) => 36 * firsts.findIndex((u) => u.join() === (t[0] === 0 ? t : dual(t)).join());
+    const chips = cfg.sd
+      ? firsts.map((t) => `<span class="chip" style="color:hsl(${hue(t)},80%,68%)">H${t.join("")} = ±H${dual(t).join("")}</span>`)
+      : trip.map((t) => `<span class="chip" style="color:hsl(${hue(t)},80%,68%)">H${t.join("")}</span>`);
+    $("hgrid").innerHTML = chips.join("") + `<span class="hn">${cfg.sd
+      ? "H = ⋆H ties each component to its Hodge-dual partner (same colour), leaving 10. On a 6-D Lorentzian worldvolume ⋆⋆ = +1 on 3-forms, so a real self-dual H exists."
+      : "20 independent components of H = dB (B itself has 15). Same colour = Hodge-dual partners; tick the box to impose self-duality."}</span>`;
+  }
+  function mPanel() {
+    const m = S.mTheory(cfg.gs, cfg.n11), M2 = cfg.brane === "M2";
+    $("p-sym").innerHTML = "g<sub>MN</sub> + C<sub>MNP</sub> + Ψ<sub>M</sub>"; $("p-sym").style.fontSize = "2rem"; $("p-sym").classList.remove("bad");
+    $("p-name").textContent = "11-D supergravity: the massless states";
+    $("p-detail").textContent = "128 bosonic + 128 fermionic states, split into:";
+    $("p-parts").innerHTML = m.multiplet.map(([n, sym, c]) => `<li><span>${n}</span><span class="s">${sub(sym)} · ${c} states</span></li>`).join("");
+    const rows = [
+      ["Spacetime dimensions", `11 (3 drawn: x¹, x², y${M2 ? "; x¹⁰ as the tube" : ""})`],
+      ["M-circle R₁₁ = g_s√α′", f(m.R11, 3)],
+      ["11-D Planck length l_p = g_s^⅓√α′", f(m.lp, 3)],
+      ["D0-brane mass 1/(g_s√α′)", f(m.d0Mass, 3)],
+      ...(M2 ? [
+        [`Momentum n = ${cfg.n11} around x¹⁰: mass n/R₁₁`, f(m.kkMass, 3)],
+        ["M2 tension 1/((2π)² l_p³)", fx(m.tM2)],
+        ["Wrapped M2: 2πR₁₁·T_M2", `${fx(m.tString)} = 1/(2πα′) ✓`],
+      ] : [
+        ["M5 tension 1/((2π)⁵ l_p⁶)", fx(m.tM5)],
+        ["M5 on x¹⁰: 2πR₁₁·T_M5 = T_D4", fx(m.tD4)],
+        ["M5 not on x¹⁰ = NS5 tension", fx(m.tNS5)],
+        ["H components", cfg.sd ? `${m.h.selfDual} (self-dual)` : `${m.h.full} (full)`],
+      ]),
+    ];
+    $("mread").innerHTML = rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join("");
+    $("red").innerHTML = m.toIIA.map(([fld, c, parts]) => `<tr><td>${sub(fld)} (${c})</td><td>${parts.map(([n, k]) => `${sub(n)} ${k}`).join(" + ")}</td></tr>`).join("");
+    hGrid();
+  }
   function updatePanel() {
+    if (cfg.theory === "M") { spSync(); mPanel(); return; }
     if (cfg.theory === "super") spSync();
     const st = S.classify(cfg);
     $("p-sym").innerHTML = sub(st.symbol);
@@ -362,6 +417,7 @@
     ctx.fillStyle = `rgba(0,0,0,${$("persist").value})`;
     ctx.fillRect(0, 0, geo.W, geo.H);
     ctx.globalCompositeOperation = "source-over";
+    if (cfg.theory === "M") { drawBrane(ctx); drawSpin(); return; }
     const pts = S.shape(cfg, tau, 360);
     const extent = pts.reduce((m, p) => Math.max(m, Math.abs(p.x1), Math.abs(p.x2), Math.abs(p.y - pts[0].y)), 0);
     ctx.shadowColor = "#39ff9c"; ctx.shadowBlur = 10;
@@ -392,16 +448,41 @@
     if (cfg.theory === "super") { drawFermions(); drawSpin(); }
   }
 
+  // M2 wrapped on y × x¹⁰ is a torus around the ring, tube radius R₁₁ on the same scale as R; it
+  // thins to the IIA string as g_s → 0. Amber rings are the phase fronts of momentum n around x¹⁰.
+  function drawBrane(ctx) {
+    const line = (P, color, w = 1) => { ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath(); P.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke(); };
+    ctx.font = "11px ui-monospace, monospace";
+    if (cfg.brane === "M2") {
+      const rt = Math.max(1.5, Math.min(0.85 * geo.rho, (geo.rho * cfg.gs) / cfg.R));
+      const pt = (th, ph) => proj(ring(th, rt * Math.cos(ph), rt * Math.sin(ph)));
+      const NU = 96, rings = rt < 4 ? 1 : 12, spokes = rt < 4 ? 0 : 32;
+      for (let j = 0; j < rings; j++) line([...Array(NU + 1).keys()].map((i) => pt((2 * Math.PI * i) / NU, (2 * Math.PI * j) / rings)), "rgba(57,255,156,0.55)", rt < 4 ? 2 : 1);
+      for (let i = 0; i < spokes; i++) line([...Array(25).keys()].map((k) => pt((2 * Math.PI * i) / spokes, (2 * Math.PI * k) / 24)), "rgba(57,255,156,0.3)");
+      for (let k = 0; k < cfg.n11; k++) line([...Array(NU + 1).keys()].map((i) => pt((2 * Math.PI * i) / NU, (2 * Math.PI * k) / cfg.n11 + tau)), "#ffcf4a", 2);
+      ctx.fillStyle = "#ff7ad9";
+      ctx.fillText(cfg.gs < 1 ? "g_s < 1: x¹⁰ is small, so the wrapped membrane looks like a string: Type IIA" : "g_s > 1: the tube x¹⁰ opens up, the 11th dimension appears: M-theory", 10, 32);
+      if (cfg.n11) ctx.fillText(`n = ${cfg.n11}: momentum around x¹⁰ = ${cfg.n11} D0-brane${cfg.n11 > 1 ? "s" : ""}, mass n/R₁₁`, 10, 46);
+    } else {
+      const sheet = (th, u) => proj(ring(th, 0.5 * geo.rho * u, 0.12 * geo.rho * Math.sin(3 * th - tau) * Math.cos((Math.PI * u) / 2)));
+      for (let j = 0; j <= 8; j++) line([...Array(97).keys()].map((i) => sheet((2 * Math.PI * i) / 96, -1 + j / 4)), "rgba(57,255,156,0.5)");
+      for (let i = 0; i < 36; i++) line([...Array(17).keys()].map((k) => sheet((2 * Math.PI * i) / 36, -1 + k / 8)), "rgba(57,255,156,0.25)");
+      ctx.fillStyle = "#ff7ad9";
+      ctx.fillText("M5: a 2-D slice (along y and x¹) of its 5 space directions; the other 3 are not drawn", 10, 32);
+    }
+  }
+
   // CH 6 (internal space). Vector mode: the RNS field ψ^μ carries a vector index, so a rotation by θ
   // in the (a, b) plane turns it by θ and it closes at 2π. Spinor mode: the R ground state turns by
   // S(θ) = cos(θ/2) + sin(θ/2) γ_a γ_b, lands on −ψ at 2π and closes at 4π. Directions 1–9 are spatial.
-  const G10 = window.Spinors.gammas(10);
+  const G10 = window.Spinors.gammas(10), G11 = window.Spinors.gammas(11);
+  const isM = () => cfg.theory === "M";
   const parity = (i) => { let c = 0; for (; i; i >>= 1) c ^= i & 1; return c; };
-  const sp = { mode: "vec", a: 1, b: 2, axes: { vec: [1, 2, 3], spin: null }, link: false, cliff: false, yaw0: view.yaw };
+  const sp = { mode: "vec", a: 1, b: 2, axes: { vec: [1, 2, 3], spin: null }, link: false, cliff: false, yaw0: view.yaw, ch: 1 };
   const PSI_INDEX = { x1: 1, x2: 2, y: 9 };
   // The R ground state's chirality: one Weyl half under GSO (IIA's two sides are opposite), both without it.
   function spinChirality() {
-    if (!cfg.gso) return null;
+    if (isM() || !cfg.gso) return null;
     const rSide = cfg.left.sector === "R" ? "left" : cfg.mode === "closed" && cfg.right.sector === "R" ? "right" : "left";
     return rSide === "right" && cfg.type === "IIA" ? 1 : 0;
   }
@@ -412,12 +493,26 @@
     const n = window.Spinors.norm(v);
     return v.map(([a, b]) => [a / n, b / n]);
   }
+  // M-theory gravitino Ψ_M: one 32-component spinor per channel M = 0…10 (no chirality in 11-D).
+  const gravitino = () => Array.from({ length: 11 }, (_, N) => {
+    const v = Array.from({ length: 32 }, (_, i) => [Math.cos(0.9 * i + 1.3 * N) * (1 + 0.5 * Math.cos(1.1 * i + N)), Math.sin(0.9 * i + 1.3 * N) * (1 + 0.5 * Math.cos(1.1 * i + N))]);
+    const n = window.Spinors.norm(v);
+    return v.map(([a, b]) => [a / n, b / n]);
+  });
   const allowed = () => [...Array(32).keys()].filter((i) => spinChirality() === null || parity(i) === spinChirality());
   function spSync() {
-    const vec = sp.mode === "vec";
+    if (isM()) sp.mode = "spin";
+    const vec = sp.mode === "vec", nd = isM() ? 10 : 9;
+    if (sp.a > nd) sp.a = sp.b === 1 ? 2 : 1;
+    if (sp.b > nd) sp.b = sp.a === 1 ? 2 : 1;
+    $("sp-ch").innerHTML = [...Array(11).keys()].map((N) => `<option value="${N}">Ψ${N}${N === 0 ? " (time)" : N === 9 ? " (y)" : N === 10 ? " (x¹⁰, the M-circle)" : ""}</option>`).join("");
+    $("sp-ch").value = sp.ch;
+    $("sp-dirs").textContent = isM()
+      ? "Planes use the space directions 1–10 (9 = the circle y, 10 = the M-circle x¹⁰). The 10 planes with time x⁰ are boosts, which never close, so they are not offered."
+      : "Planes use the space directions 1–9 (9 = the circle y). The 9 planes with time x⁰ are boosts, which never close, so they are not offered.";
     $("sp-vec").classList.toggle("on", vec); $("sp-spin").classList.toggle("on", !vec);
     $("sp-cliff").style.display = vec ? "none" : ""; $("sp-cliff").classList.toggle("on", sp.cliff);
-    const dirs = [...Array(9).keys()].map((i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
+    const dirs = [...Array(nd).keys()].map((i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
     $("sp-a").innerHTML = dirs; $("sp-b").innerHTML = dirs; $("sp-a").value = sp.a; $("sp-b").value = sp.b;
     const comps = vec
       ? [...Array(9).keys()].map((i) => [i + 1, `ψ${"¹²³⁴⁵⁶⁷⁸⁹"[i]}`])
@@ -429,7 +524,13 @@
       $(`sp-${k}`).innerHTML = comps.map(([v, t]) => `<option value="${v}">${t}</option>`).join("");
       $(`sp-${k}`).value = sp.axes[sp.mode][j];
     });
-    const feat = vec ? [
+    const feat = isM() ? [
+      ["Lands on −Ψ_M at 2π and closes only at 4π", "topological: true for any 3 axes"],
+      [`Ψ_M is a vector-spinor: channels ${sp.a} and ${sp.b} also mix with each other like a vector; the others only turn as spinors`, ""],
+      ["γᵃγᵇΨ and γᵇγᵃΨ end at opposite points", "topological"],
+      ["Curve shape", "projection-dependent"],
+      ["No chirality in 11-D: one 32-component Majorana spinor per channel (shown complex)", ""],
+    ] : vec ? [
       ["Closes after one turn (2π)", "topological: true for any 3 axes"],
       ["Circle shape and size", "projection-dependent: change the axes"],
       ["ψ^μ has a vector index, so it turns exactly like X^μ; it lives in ℝ¹⁰, not in a spinor space", ""],
@@ -440,8 +541,8 @@
       [spinChirality() === null ? "GSO off: both chiralities, 32 components (dot half solid)" : `Chirality: ${spinChirality() ? "outline" : "solid"} dot = this Weyl half (16 of 32), kept by GSO`, "invariant under rotations"],
     ];
     $("sp-feat").innerHTML = feat.map(([a, b]) => `<li><b>${a}</b>${b ? ` · ${b}` : ""}</li>`).join("") +
-      "<li>Analogy, not space: these axes are components of a representation. A 3-D slice cannot hold the 16- or 32-component structure; it shows what the operations do. " +
-      (vec ? "" : "Drawn as a complex Weyl spinor; the Majorana condition (16 real components) is not drawn.") + "</li>";
+      `<li>Analogy, not space: these axes are components of a representation. A 3-D slice cannot hold the ${isM() ? "11 × 32-component" : "16- or 32-component"} structure; it shows what the operations do. ` +
+      (vec || isM() ? "" : "Drawn as a complex Weyl spinor; the Majorana condition (16 real components) is not drawn.") + "</li>";
   }
   $("sp-vec").onclick = () => { sp.mode = "vec"; spSync(); };
   $("sp-spin").onclick = () => { sp.mode = "spin"; spSync(); };
@@ -449,9 +550,10 @@
   $("sp-link").onchange = () => { sp.link = $("sp-link").checked; sp.yaw0 = view.yaw; };
   for (const k of ["a", "b"]) $(`sp-${k}`).onchange = () => {
     sp[k] = Number($(`sp-${k}`).value);
-    if (sp.a === sp.b) sp[k === "a" ? "b" : "a"] = (sp[k] % 9) + 1;
+    if (sp.a === sp.b) sp[k === "a" ? "b" : "a"] = (sp[k] % (isM() ? 10 : 9)) + 1;
     spSync();
   };
+  $("sp-ch").onchange = () => { sp.ch = Number($("sp-ch").value); };
   ["x", "y", "z"].forEach((k, j) => ($(`sp-${k}`).onchange = () => { sp.axes[sp.mode][j] = Number($(`sp-${k}`).value); }));
 
   const spCache = {};
@@ -469,6 +571,23 @@
       at = (th) => { const v = e.slice(), c = Math.cos(th), s = Math.sin(th); v[sp.a] = c * e[sp.a] - s * e[sp.b]; v[sp.b] = s * e[sp.a] + c * e[sp.b]; return v; };
       state = at;
       note = nsBank.r > 0 ? `ψ${"¹²³⁴⁵⁶⁷⁸⁹"[PSI_INDEX[nsBank.fpol] - 1]}₋${hf(nsBank.r)} polarization` : "no ψ quantum in this state: its polarization direction is shown";
+    } else if (isM()) {
+      const key = `M|${a}|${b}`;
+      if (spCache.key !== key) {
+        const chans = gravitino();
+        Object.assign(spCache, { key, chans, w: chans.map((v) => window.Spinors.rotate(G11, a, b, Math.PI, v)) });
+      }
+      // Ψ'_M = Λ_M^N S(θ) Ψ_N: the spinor turn on every channel, plus vector mixing of channels a and b.
+      state = (th) => {
+        const c = Math.cos(th / 2), sn = Math.sin(th / 2), { chans, w } = spCache;
+        const Sp = (N) => chans[N].map((x, i) => [c * x[0] + sn * w[N][i][0], c * x[1] + sn * w[N][i][1]]);
+        const mix = (p, q, cp, cq) => { const P = Sp(p), Q = Sp(q); return P.map((x, i) => [cp * x[0] + cq * Q[i][0], cp * x[1] + cq * Q[i][1]]); };
+        if (sp.ch === sp.a) return mix(sp.a, sp.b, Math.cos(th), -Math.sin(th));
+        if (sp.ch === sp.b) return mix(sp.a, sp.b, Math.sin(th), Math.cos(th));
+        return Sp(sp.ch);
+      };
+      at = (th) => state(th).flat();
+      note = `gravitino channel Ψ${sp.ch}: a 32-component spinor`;
     } else {
       // S(θ)ψ₀ = cos(θ/2) ψ₀ + sin(θ/2) γ_b γ_a ψ₀: both vectors are cached, so a frame costs no matrix work.
       const key = `${spinChirality()}|${a}|${b}`;
@@ -489,7 +608,8 @@
     let extra = [];
     if (!vec && sp.cliff) {
       const S = window.Spinors, psi = state(theta);
-      const gb = S.apply(G10[b], psi), gab = S.apply(G10[a], gb), ga = S.apply(G10[a], psi), gba = S.apply(G10[b], ga);
+      const G = isM() ? G11 : G10;
+      const gb = S.apply(G[b], psi), gab = S.apply(G[a], gb), ga = S.apply(G[a], psi), gba = S.apply(G[b], ga);
       extra = [[psi, gb, gab].map((v) => pick(v.flat())), [psi, ga, gba].map((v) => pick(v.flat()))];
     }
     const big = Math.max(1e-6, ...pts.flat().map(Math.abs), ...extra.flat(2).map(Math.abs));
@@ -521,7 +641,7 @@
       path.forEach((q, i) => { const [x, y] = P(q); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); ctx.setLineDash([]);
       dot(path[2], color, lab, true, 16);
     }
-    const ch = vec ? 0 : spinChirality();
+    const ch = vec || isM() ? 0 : spinChirality();
     const cur = pick(at(theta));
     if (ch === null) { dot(cur, "#39ff9c", ""); const [x, y] = P(cur); ctx.fillStyle = "#05080a"; ctx.fillRect(x - 6, y, 12, 6); ctx.strokeStyle = "#39ff9c"; ctx.beginPath(); ctx.arc(x, y, 5, 0, 2 * Math.PI); ctx.stroke(); }
     else dot(cur, "#39ff9c", "", ch === 0);

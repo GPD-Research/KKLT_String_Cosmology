@@ -285,3 +285,27 @@ def t_dual(cfg):
     if is_super(cfg):
         out["type"] = "IIB" if cfg["type"] == "IIA" else "IIA"
     return out
+
+
+def m_theory(gs, n=0):
+    """M-theory on a circle of radius R11 = g_s sqrt(alpha') as Type IIA at coupling g_s (alpha' = 1)."""
+    r11, lp = gs, gs ** (1 / 3)
+    t_m2, t_m5 = 1 / (TAU**2 * lp**3), 1 / (TAU**5 * lp**6)
+    return {
+        "R11": r11,
+        "lp": lp,
+        "tM2": t_m2,
+        "tM5": t_m5,
+        "d0Mass": 1 / gs,
+        "kkMass": n / r11,
+        "tString": TAU * r11 * t_m2,
+        "tD4": TAU * r11 * t_m5,
+        "tNS5": t_m5,
+        "multiplet": [["Graviton", "g_MN", 44], ["3-form", "C_MNP", 84], ["Gravitino", "Ψ_M", 128]],
+        "toIIA": [
+            ["g_MN", 44, [["g_μν", 35], ["C_μ (R–R 1-form)", 8], ["φ (dilaton)", 1]]],
+            ["C_MNP", 84, [["C_μνρ (R–R 3-form)", 56], ["B_μν (Kalb–Ramond)", 28]]],
+            ["Ψ_M", 128, [["two gravitini, opposite chirality", 112], ["two dilatini, opposite chirality", 16]]],
+        ],
+        "h": {"full": 20, "selfDual": 10, "b": 15},
+    }

@@ -193,3 +193,36 @@ def test_js_matches_python():
         for a, b in zip(js["s"], ss.shape(cfg, 0.9, 16), strict=True):
             for key in ("x1", "x2", "y"):
                 assert a[key] == pytest.approx(b[key], abs=1e-9)
+
+
+@pytest.mark.parametrize("gs", [0.1, 0.5, 1.0, 2.7])
+def test_m_theory_wrapped_m2_is_the_iia_string(gs):
+    m = ss.m_theory(gs, n=2)
+    assert m["tString"] == pytest.approx(1 / (2 * math.pi))
+    assert m["tD4"] == pytest.approx(1 / ((2 * math.pi) ** 4 * gs))
+    assert m["tNS5"] == pytest.approx(1 / ((2 * math.pi) ** 5 * gs**2))
+    assert m["d0Mass"] == pytest.approx(1 / gs) and m["kkMass"] == pytest.approx(2 / gs)
+
+
+def test_m_theory_state_counts():
+    m = ss.m_theory(1.0)
+    bos = sum(c for _, s, c in m["multiplet"] if s != "Ψ_M")
+    assert bos == 128 == m["multiplet"][2][2]
+    for _, total, parts in m["toIIA"]:
+        assert sum(c for _, c in parts) == total
+    assert m["h"]["full"] == math.comb(6, 3) and m["h"]["selfDual"] == m["h"]["full"] // 2
+    assert m["h"]["b"] == math.comb(6, 2)
+
+
+def test_m_theory_js_python_parity():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node not installed")
+    for gs in (0.2, 1.3):
+        js = json.loads(subprocess.run(
+            [node, "-e", f"console.log(JSON.stringify(require({json.dumps(str(ROOT / "src" / "UI" / "strings.js"))}).mTheory({gs}, 1)))"],
+            capture_output=True, text=True, check=True).stdout)
+        py = ss.m_theory(gs, 1)
+        for key in ("R11", "lp", "tM2", "tM5", "d0Mass", "kkMass", "tString", "tD4", "tNS5"):
+            assert js[key] == pytest.approx(py[key])
+        assert js["toIIA"] == py["toIIA"] and js["multiplet"] == py["multiplet"]
