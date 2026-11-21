@@ -787,7 +787,7 @@
     k.addEventListener("pointermove", (ev) => {
       if (!drag) return;
       const d = ev.clientX - drag.x - (ev.clientY - drag.y);
-      if (Math.abs(d) > 4) drag.moved = true;
+      if (Math.hypot(ev.clientX - drag.x, ev.clientY - drag.y) > 4) drag.moved = true;
       if (drag.moved) { const i = drag.i + Math.round(d / 28); if (i !== disp[cfg.theory]) setDisplay(i); }
     });
     const up = () => {
