@@ -432,7 +432,7 @@
       ctx.fillStyle = "#39ff9c"; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 2 * Math.PI); ctx.fill();
       if (cfg.theory === "super") {
         ctx.shadowBlur = 0; ctx.fillStyle = "#ff7ad9"; ctx.font = "11px ui-monospace, monospace";
-        ctx.fillText("X at rest: this state vibrates only in ψ (turn DISPLAY to CH 5)", 10, 32);
+        ctx.fillText("X at rest: only ψ vibrates (DISPLAY → CH 5)", 10, 32);
       }
     } else {
       ctx.strokeStyle = "#39ff9c"; ctx.lineWidth = 2;
