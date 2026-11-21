@@ -50,8 +50,8 @@
   function bankHTML(id, title) {
     const opts = POLS.map(([v, t]) => `<option value="${v}">${t}</option>`).join("");
     return `<div class="bank" id="${id}"><h2 style="margin:.3rem 0">${title}</h2>
-      <div class="ctl"><label>Mode number n <b id="${id}-n-v"></b></label><input type="range" id="${id}-n" min="1" max="4" step="1"></div>
-      <div class="ctl"><label>Quanta q <b id="${id}-q-v"></b></label><input type="range" id="${id}-q" min="0" max="3" step="1"></div>
+      <div class="ctl rng"><label>Mode number n <b id="${id}-n-v"></b></label><input type="range" id="${id}-n" min="1" max="4" step="1"></div>
+      <div class="ctl rng"><label>Quanta q <b id="${id}-q-v"></b></label><input type="range" id="${id}-q" min="0" max="3" step="1"></div>
       <div class="ctl row"><label style="flex:1">Polarization</label><select id="${id}-pol">${opts}</select></div>
       <div class="super-only">
         <div class="ctl row"><label style="flex:1">Fermion sector</label><select id="${id}-sec"><option value="NS">NS (antiperiodic)</option><option value="R">R (periodic)</option></select></div>
@@ -98,12 +98,14 @@
     $("subtitle").textContent = M
       ? "M-theory: 11-D, here on the circle y (radius R) and the M-circle x¹⁰ of radius R₁₁ = g_s√α′, in units α′ = 1."
       : sup
-      ? `Type ${cfg.type} superstring on a circle of radius R, in units α′ = 1. Each knob setting is one quantum state.`
-      : "Bosonic string on a circle of radius R, in units α′ = 1. Each knob setting is one quantum state.";
+      ? `Type ${cfg.type} superstring on a circle of radius R, in units α′ = 1. Each setting of the controls on the left is one quantum state.`
+      : "Bosonic string on a circle of radius R, in units α′ = 1. Each setting of the controls on the left is one quantum state.";
     $("ch1-h").textContent = M
       ? "CH 1: the brane. The dashed ring is the compact dimension y; x¹ points out from it and x² points up. Drag to rotate"
       : "CH 1: the string X. The dashed ring is the compact dimension y; x¹ points out from it and x² points up. Drag to rotate";
     $("note").textContent = M ? M_NOTE : sup ? SUPER_NOTE : BOSONIC_NOTE;
+    $("info-h").textContent = M ? "M-theory 11-D" : sup ? `Type ${cfg.type} superstring 10-D` : "Bosonic string 26-D";
+    showChannels();
     $("R-v").textContent = Number(cfg.R.toFixed(2)) + (Math.abs(cfg.R - 1) < 1e-9 ? " (self-dual)" : "");
     $("k-v").textContent = cfg.k; $("w-v").textContent = cfg.w; $("L-v").textContent = cfg.L.toFixed(1);
     for (const b of ["left", "right"]) { $(`${b}-n-v`).textContent = cfg[b].n; $(`${b}-q-v`).textContent = cfg[b].q; }
@@ -179,7 +181,7 @@
     }).join(" ")}</div>`).join("");
     $("eq").querySelectorAll("span.t").forEach((el) => {
       if (prevTerms[el.dataset.id] !== undefined && prevTerms[el.dataset.id] !== terms[el.dataset.id]) {
-        el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 700);
+        el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1400);
       }
     });
     prevTerms = terms;
@@ -273,8 +275,8 @@
     const dual = (t) => [0, 1, 2, 3, 4, 5].filter((i) => !t.includes(i));
     const firsts = trip.filter((t) => t[0] === 0), hue = (t) => 36 * firsts.findIndex((u) => u.join() === (t[0] === 0 ? t : dual(t)).join());
     const chips = cfg.sd
-      ? firsts.map((t) => `<span class="chip" style="color:hsl(${hue(t)},80%,68%)">H${t.join("")} = ±H${dual(t).join("")}</span>`)
-      : trip.map((t) => `<span class="chip" style="color:hsl(${hue(t)},80%,68%)">H${t.join("")}</span>`);
+      ? firsts.map((t) => `<span class="chip" style="color:hsl(${hue(t)},75%,30%)">H${t.join("")} = ±H${dual(t).join("")}</span>`)
+      : trip.map((t) => `<span class="chip" style="color:hsl(${hue(t)},75%,30%)">H${t.join("")}</span>`);
     $("hgrid").innerHTML = chips.join("") + `<span class="hn">${cfg.sd
       ? "H = ⋆H ties each component to its Hodge-dual partner (same colour), leaving 10. On a 6-D Lorentzian worldvolume ⋆⋆ = +1 on 3-forms, so a real self-dual H exists."
       : "20 independent components of H = dB (B itself has 15). Same colour = Hodge-dual partners; tick the box to impose self-duality."}</span>`;
@@ -430,7 +432,7 @@
       ctx.fillStyle = "#39ff9c"; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 2 * Math.PI); ctx.fill();
       if (cfg.theory === "super") {
         ctx.shadowBlur = 0; ctx.fillStyle = "#ff7ad9"; ctx.font = "11px ui-monospace, monospace";
-        ctx.fillText("X at rest: this state vibrates only in ψ (CH 5)", 10, 32);
+        ctx.fillText("X at rest: this state vibrates only in ψ (turn DISPLAY to CH 5)", 10, 32);
       }
     } else {
       ctx.strokeStyle = "#39ff9c"; ctx.lineWidth = 2;
@@ -739,6 +741,73 @@
     requestAnimationFrame(loop);
   }
   window.addEventListener("resize", () => (dirty = true));
+
+  // ---------- DISPLAY knob: which scope channels are on screen ----------
+  // Each theory has its own positions; the last one shows every channel, as the scope did before.
+  const CHANNELS = {
+    bosonic: [["CH 1", ["1"]], ["CH 2–4", ["24"]], ["BOTH", ["1", "24"]]],
+    super: [["CH 1", ["1"]], ["CH 2–4", ["24"]], ["CH 5", ["5"]], ["CH 6", ["6"]], ["ALL", ["1", "24", "5", "6"]]],
+    M: [["CH 1", ["1"]], ["CH 6", ["6"]], ["BOTH", ["1", "6"]]],
+  };
+  const disp = { bosonic: 2, super: 0, M: 0 };
+  const KNOB = { r: 40, cx: 75, cy: 44, span: 240 };
+  $("disp").innerHTML = '<div class="knob" id="knob" tabindex="0" role="slider" aria-label="Display channel"><div class="cap"></div></div><div class="kt">DISPLAY</div>';
+  const knobAngle = (i, n) => (n === 1 ? 0 : -KNOB.span / 2 + (KNOB.span * i) / (n - 1)) * (n <= 3 ? 0.5 : 1);
+  function setDisplay(i) {
+    const n = CHANNELS[cfg.theory].length;
+    disp[cfg.theory] = Math.max(0, Math.min(n - 1, i));
+    showChannels();
+  }
+  function showChannels() {
+    const opts = CHANNELS[cfg.theory], i = Math.min(disp[cfg.theory], opts.length - 1), on = opts[i][1];
+    const box = $("disp");
+    box.querySelectorAll(".klab").forEach((e) => e.remove());
+    opts.forEach(([lab], j) => {
+      const a = (knobAngle(j, opts.length) * Math.PI) / 180, el = document.createElement("span");
+      el.className = "klab" + (j === i ? " on" : ""); el.textContent = lab;
+      el.style.left = `${KNOB.cx + KNOB.r * Math.sin(a) * 1.45}px`; el.style.top = `${KNOB.cy - KNOB.r * Math.cos(a)}px`;
+      el.onclick = () => setDisplay(j);
+      box.appendChild(el);
+    });
+    box.querySelector(".cap").style.transform = `rotate(${knobAngle(i, opts.length)}deg)`;
+    $("knob").setAttribute("aria-valuetext", opts[i][0]);
+    $("knob").setAttribute("aria-valuemin", 0); $("knob").setAttribute("aria-valuemax", opts.length - 1); $("knob").setAttribute("aria-valuenow", i);
+    const grow = on.length === 1 ? on[0] : "1";
+    document.querySelectorAll("#scopes [data-ch]").forEach((e) => {
+      e.classList.toggle("ch-off", !on.includes(e.dataset.ch));
+      e.classList.toggle("grow", e.dataset.ch === grow && (e.classList.contains("screen") || !!e.querySelector(".screen")));
+    });
+    document.body.classList.toggle("multi", on.length > 1);
+    $("info-disp").textContent = `DISPLAY knob: drag it, click it to step, or click a label. Each position shows one scope channel; ${opts[opts.length - 1][0]} shows every channel, and the page may then scroll.`;
+    dirty = true;
+  }
+  {
+    const k = $("knob"); let drag = null;
+    k.addEventListener("pointerdown", (ev) => { drag = { x: ev.clientX, y: ev.clientY, i: disp[cfg.theory], moved: false }; k.setPointerCapture(ev.pointerId); ev.preventDefault(); k.focus(); });
+    k.addEventListener("pointermove", (ev) => {
+      if (!drag) return;
+      const d = ev.clientX - drag.x - (ev.clientY - drag.y);
+      if (Math.abs(d) > 4) drag.moved = true;
+      if (drag.moved) { const i = drag.i + Math.round(d / 28); if (i !== disp[cfg.theory]) setDisplay(i); }
+    });
+    const up = () => {
+      if (drag && !drag.moved) setDisplay((disp[cfg.theory] + 1) % CHANNELS[cfg.theory].length);
+      drag = null;
+    };
+    k.addEventListener("pointerup", up);
+    k.addEventListener("pointercancel", () => (drag = null));
+    k.addEventListener("keydown", (ev) => {
+      const step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[ev.key];
+      if (step) { setDisplay(disp[cfg.theory] + step); ev.preventDefault(); }
+      else if (ev.key === "Home") { setDisplay(0); ev.preventDefault(); }
+      else if (ev.key === "End") { setDisplay(CHANNELS[cfg.theory].length - 1); ev.preventDefault(); }
+    });
+  }
+  $("ibtn").onclick = () => $("info").showModal();
+  const fitHeader = () => document.documentElement.style.setProperty("--hdr", `${document.querySelector("header").offsetHeight}px`);
+  fitHeader();
+  window.addEventListener("resize", fitHeader);
+  new ResizeObserver(() => (dirty = true)).observe($("scopes"));
 
   $("preset").value = "Graviton g_μν";
   syncControls(); updatePanel(); spSync();

@@ -6,125 +6,186 @@
   <title>StringScope — vibrating string states</title>
   <meta name="description" content="StringScope: an interactive oscilloscope for string states on a circle, bosonic (26-D) or Type II superstring (10-D). Step oscillator quanta, momentum, winding and radius and watch the string vibrate as the mass formula, level matching and GSO projection update live, from the graviton and gravitino to the Ramond–Ramond forms.">
   <style>
-    :root { --bg:#05080a; --panel:#0d1417; --line:#1f3a33; --phos:#39ff9c; --dim:#6b8f84; --amber:#ffcf4a; --cyan:#4ad8ff; --red:#ff6b6b; --text:#d8f5ea; }
+    :root { --plate:#c6cdd1; --plate2:#b5bdc2; --line:#1d2124; --ink:#111; --dim:#3f484e; --crt:#05080a; --phos:#39ff9c;
+      --green:#0b6b31; --red:#b3261e; --amber:#b87400; --hdr:48px; }
     * { box-sizing: border-box; }
-    body { margin:0; background:var(--bg); color:var(--text); font:14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    header { padding:.7rem 1rem; border-bottom:1px solid var(--line); display:flex; gap:1rem; align-items:baseline; flex-wrap:wrap; }
-    header h1 { margin:0; font-size:1.15rem; color:var(--phos); letter-spacing:.05em; }
+    body { margin:0; background:var(--plate); color:var(--ink); font:14px/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif; }
+    b, .mono, select, table.read td:last-child { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    header { padding:.55rem 1rem; border-bottom:2px solid var(--line); display:flex; gap:.8rem; align-items:center; flex-wrap:wrap;
+      background:linear-gradient(#d3d9dc, var(--plate)); }
+    header h1 { margin:0; font-size:1.15rem; letter-spacing:.08em; font-weight:800; }
     header a { color:var(--dim); }
-    .wrap { display:grid; grid-template-columns:270px minmax(0,1fr) 360px; gap:.8rem; padding:.8rem; }
-    @media (max-width:1150px) { .wrap { grid-template-columns:1fr; } }
-    .panel { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:.8rem; }
-    .panel h2 { margin:0 0 .5rem; font-size:.8rem; color:var(--dim); text-transform:uppercase; letter-spacing:.12em; }
-    .ctl { margin:.45rem 0; }
-    .ctl label { display:flex; justify-content:space-between; font-size:.8rem; color:var(--dim); }
-    .ctl label b { color:var(--phos); font-weight:600; }
-    input[type=range] { width:100%; accent-color:var(--phos); }
-    select, button { background:#0a1013; color:var(--text); border:1px solid var(--line); border-radius:4px; padding:.3rem .5rem; font:inherit; }
-    button { cursor:pointer; } button:hover { border-color:var(--phos); }
-    .seg { display:flex; gap:.3rem; } .seg button { flex:1; } .seg button.on { background:#123026; border-color:var(--phos); color:var(--phos); }
-    .bank { border-top:1px dashed var(--line); margin-top:.6rem; padding-top:.4rem; }
+    #subtitle { color:var(--dim); }
+    .ibtn { width:24px; height:24px; border-radius:50%; border:1.5px solid var(--line); background:radial-gradient(circle at 35% 30%, #fff, #c9ced1 70%, #9aa2a7);
+      font:italic 700 14px/1 Georgia, serif; color:var(--ink); cursor:pointer; padding:0; box-shadow:0 1px 2px #0006; }
+    .ibtn:hover { border-color:#000; }
+    dialog#info { max-width:640px; border:2px solid var(--line); border-radius:8px; background:#f4f6f7; color:var(--ink); padding:1rem 1.2rem; font-size:15px; line-height:1.55; }
+    dialog#info::backdrop { background:#0007; }
+    dialog#info h3 { margin:0 0 .5rem; font-size:1rem; letter-spacing:.06em; text-transform:uppercase; }
+    dialog#info p { margin:.4rem 0; }
+    dialog#info form { text-align:right; margin-top:.6rem; }
+    .wrap { display:grid; grid-template-columns:290px minmax(0,1fr) 360px; gap:0; padding:.5rem; align-items:start; }
+    .panel { padding:.6rem .8rem; }
+    #scopes { border-left:1.5px solid var(--line); border-right:1.5px solid var(--line); }
+    .panel h2 { margin:0 0 .4rem; font-size:.74rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--ink); }
+    .ctl { margin:.3rem 0; }
+    .ctl label { display:flex; justify-content:space-between; gap:.3rem; font-size:.8rem; color:var(--ink); }
+    .ctl label b { font-weight:700; }
+    .ctl.rng { display:grid; grid-template-columns:minmax(0,1fr) 46%; align-items:center; gap:.5rem; }
+    .ctl.rng label { display:block; line-height:1.25; } .ctl.rng label b { float:right; margin-left:.3rem; }
+    #red td:last-child { font-weight:400; }
+    /* Slide-switch look: a dark slot with a black lever, like the scope's DC/AC/OFF switches. */
+    input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:20px; background:transparent; margin:0; cursor:pointer; }
+    input[type=range]::-webkit-slider-runnable-track { height:6px; border-radius:3px; background:#2a3034; box-shadow:inset 0 1px 2px #000; }
+    input[type=range]::-moz-range-track { height:6px; border-radius:3px; background:#2a3034; box-shadow:inset 0 1px 2px #000; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:11px; height:20px; margin-top:-7px; border-radius:2px; border:1px solid #000;
+      background:linear-gradient(90deg, #111 0 42%, #e8e8e8 42% 58%, #111 58%), #111; box-shadow:0 2px 2px #0007; }
+    input[type=range]::-moz-range-thumb { width:9px; height:18px; border-radius:2px; border:1px solid #000;
+      background:linear-gradient(90deg, #111 0 42%, #e8e8e8 42% 58%, #111 58%), #111; box-shadow:0 2px 2px #0007; }
+    input[type=checkbox] { -webkit-appearance:none; appearance:none; position:relative; flex:none; width:28px; height:12px; margin:0 .2rem 0 0;
+      border-radius:2px; background:#2a3034; box-shadow:inset 0 1px 2px #000; cursor:pointer; vertical-align:middle; }
+    input[type=checkbox]::before { content:""; position:absolute; top:-4px; left:0; width:11px; height:18px; border-radius:2px; border:1px solid #000;
+      background:linear-gradient(90deg, #111 0 42%, #e8e8e8 42% 58%, #111 58%); transition:left .12s; }
+    input[type=checkbox]:checked::before { left:15px; }
+    input[type=checkbox]:focus-visible, input[type=range]:focus-visible, .knob:focus-visible { outline:2px solid #1d5fbf; outline-offset:2px; }
+    select { background:#eef1f2; color:var(--ink); border:1px solid #555; border-radius:3px; padding:.15rem .3rem; font-size:.78rem; }
+    button { background:linear-gradient(#f3f5f6, #cfd5d8); color:var(--ink); border:1px solid #444; border-radius:3px; padding:.25rem .45rem;
+      font:600 .74rem/1.2 inherit; font-family:inherit; text-transform:uppercase; letter-spacing:.04em; box-shadow:0 1px 1px #0005; cursor:pointer; }
+    button:hover { border-color:#000; }
+    .seg { display:flex; gap:.3rem; } .seg button { flex:1; }
+    button.on, .seg button.on { background:linear-gradient(#26292b, #0e0f10); color:#fff; border-color:#000; box-shadow:inset 0 2px 3px #000; }
+    .bank { border-top:1px solid #7d878d; margin-top:.45rem; padding-top:.3rem; }
     .row { display:flex; gap:.4rem; align-items:center; }
-    .scope { position:relative; width:100%; aspect-ratio:1.25; }
-    .scope canvas, .ch2 canvas { position:absolute; inset:0; width:100%; height:100%; }
-    .ch2 { position:relative; width:100%; height:180px; margin-top:.6rem; }
-    .tag { position:absolute; font-size:.72rem; color:var(--dim); pointer-events:none; }
-    .particle { text-align:center; padding:.6rem 0 .8rem; border-bottom:1px solid var(--line); }
-    .particle .sym { font:600 3.2rem/1.1 "Times New Roman", serif; color:var(--phos); text-shadow:0 0 12px #39ff9c88; }
-    .particle .sym.bad { color:var(--red); text-shadow:none; }
-    .particle .name { font-size:1.15rem; margin-top:.3rem; }
-    .particle .detail { color:var(--dim); font-size:.8rem; margin-top:.3rem; }
-    .parts { margin:.5rem 0 0; padding:0; list-style:none; font-size:.85rem; }
-    .parts li { display:flex; justify-content:space-between; padding:.15rem 0; }
-    .parts .s { font-family:"Times New Roman", serif; font-size:1.1rem; color:var(--amber); }
-    table.read { width:100%; border-collapse:collapse; margin:.6rem 0; font-size:.85rem; }
-    table.read td { padding:.15rem 0; } table.read td:last-child { text-align:right; color:var(--phos); }
-    .eq { font-family:"Times New Roman", serif; font-size:1.05rem; line-height:1.9; }
-    .eq .ln { margin:.25rem 0; } .eq .num { color:var(--dim); font-size:.95rem; }
-    .eq span.t { padding:0 .1rem; border-radius:3px; transition:background .6s; }
-    .eq span.t.flash { background:#3a5c1f; }
-    .ok { color:var(--phos); } .bad { color:var(--red); }
-    .note { color:var(--dim); font-size:.75rem; margin-top:.6rem; }
-    .ch5 { position:relative; width:100%; height:210px; margin-top:.6rem; }
-    .ch5 canvas { position:absolute; inset:0; width:100%; height:100%; }
-    .ch6 { position:relative; width:100%; height:300px; margin-top:.4rem; }
-    .ch6 canvas { position:absolute; inset:0; width:100%; height:100%; }
-    .sprow { display:flex; flex-wrap:wrap; gap:.4rem 1rem; align-items:center; margin:.35rem 0; font-size:.78rem; color:var(--dim); }
-    .sprow select, .sprow button { background:#0b1512; color:#d8f5ea; border:1px solid var(--line); border-radius:3px; font:inherit; padding:.1rem .25rem; }
-    .sprow button.on { border-color:var(--phos); color:var(--phos); }
+    .ctl.row label { flex:1; white-space:nowrap; }
+    /* CRT screens keep the dark phosphor look inside a black bezel. */
+    .screen { position:relative; width:100%; background:var(--crt); border:6px solid #141618; border-radius:10px; box-shadow:0 2px 4px #0006, inset 0 0 18px #000; }
+    .screen canvas { position:absolute; inset:0; width:100%; height:100%; border-radius:4px; }
+    .scope { aspect-ratio:1.25; }
+    .ch2 { height:180px; margin-top:.3rem; }
+    .ch5 { height:210px; margin-top:.3rem; }
+    .ch6 { height:300px; margin-top:.3rem; }
+    .tag { position:absolute; font:.72rem ui-monospace, monospace; color:#8fb3a6; pointer-events:none; }
+    #scopes > h2, #scopes [data-ch] > h2 { margin-top:.6rem; }
+    .chstrip { display:flex; gap:1rem; align-items:center; margin-bottom:.2rem; }
+    .chstrip h2 { margin:0 !important; flex:1; }
+    /* DISPLAY knob: silver cap in a black skirt; positions printed around it, as on the scope's DISPLAY switch. */
+    .knobbox { position:relative; width:150px; height:92px; flex:none; user-select:none; }
+    .knobbox .kt { position:absolute; left:0; right:0; bottom:0; text-align:center; font-size:.66rem; font-weight:700; letter-spacing:.12em; }
+    .knob { position:absolute; left:51px; top:20px; width:48px; height:48px; border-radius:50%; cursor:grab; touch-action:none;
+      background:#111; box-shadow:0 3px 5px #0008; }
+    .knob:active { cursor:grabbing; }
+    .knob .cap { position:absolute; inset:7px; border-radius:50%; background:radial-gradient(circle at 38% 32%, #fff, #d9dde0 55%, #a3abb0); border:1px solid #777; transition:transform .15s; }
+    .knob .cap::after { content:""; position:absolute; left:50%; top:2px; width:3px; height:42%; margin-left:-1.5px; border-radius:2px; background:#111; }
+    .klab { position:absolute; transform:translate(-50%,-50%); font-size:.64rem; font-weight:700; white-space:nowrap; cursor:pointer; padding:0 .1rem; color:var(--dim); }
+    .klab.on { color:var(--ink); text-decoration:underline; }
+    .particle { text-align:center; padding:.3rem 0 .6rem; border-bottom:1px solid #7d878d; }
+    .particle .sym { font:600 3rem/1.1 "Times New Roman", serif; color:var(--ink); }
+    .particle .sym.bad { color:var(--red); }
+    .particle .name { font-size:1.1rem; margin-top:.2rem; font-weight:600; }
+    .particle .detail { color:var(--dim); font-size:.8rem; margin-top:.2rem; }
+    .parts { margin:.4rem 0 0; padding:0; list-style:none; font-size:.85rem; text-align:left; }
+    .parts li { display:flex; justify-content:space-between; padding:.12rem 0; }
+    .parts .s { font-family:"Times New Roman", serif; font-size:1.1rem; color:#7a3d00; }
+    table.read { width:100%; border-collapse:collapse; margin:.5rem 0; font-size:.83rem; }
+    table.read td { padding:.12rem 0; } table.read td:last-child { text-align:right; font-weight:700; }
+    /* The maths sit on a green chalkboard. */
+    .eq { font-family:"Times New Roman", serif; font-size:1.05rem; line-height:1.8; background:#1f3d2b; color:#f7f7f2; padding:.5rem .7rem;
+      border:5px solid #5a4126; border-radius:6px; box-shadow:inset 0 0 14px #0009; }
+    .eq .ln { margin:.15rem 0; } .eq .num { color:#c3d4c8; font-size:.95rem; }
+    .eq span.t { padding:0 .1rem; border-radius:3px; transition:background 1.2s; }
+    .eq span.t.flash { background:#c9a227aa; }
+    .ok { color:var(--green); } .bad { color:var(--red); }
+    .eq .ok { color:#8ff0a4; } .eq .bad { color:#ffb3a8; }
+    .sprow { display:flex; flex-wrap:wrap; gap:.3rem 1rem; align-items:center; margin:.3rem 0; font-size:.78rem; color:var(--ink); }
+    .sprow select, .sprow button { font-size:.74rem; padding:.1rem .3rem; }
+    #sp-dirs { color:var(--dim); }
     #hgrid { display:flex; flex-wrap:wrap; gap:.25rem; margin:.4rem 0; font-size:.78rem; }
-    #hgrid .chip { min-width:2.6rem; }
+    #hgrid .chip { min-width:2.6rem; font-weight:700; }
     #hgrid .hn { width:100%; color:var(--dim); font-size:.74rem; }
-    ul.feat { margin:.4rem 0 0; padding-left:1.1rem; font-size:.74rem; color:var(--dim); }
-    ul.feat b { color:#d8f5ea; font-weight:normal; }
+    ul.feat { margin:.3rem 0 0; padding-left:1.1rem; font-size:.74rem; color:var(--dim); }
+    ul.feat b { color:var(--ink); font-weight:600; font-family:inherit; }
     .lad { display:flex; flex-wrap:wrap; align-items:center; gap:.25rem; margin:.3rem 0; font-size:.78rem; }
     .lad .lab { width:5.5rem; color:var(--dim); }
-    .chip { min-width:1.9rem; text-align:center; padding:.05rem .25rem; border:1px solid var(--line); border-radius:3px; }
-    .chip.keep { color:var(--phos); } .chip.drop { color:#4a5a55; text-decoration:line-through; }
-    .chip.cur { border-color:var(--amber); box-shadow:0 0 6px #ffcf4a88; }
+    .chip { min-width:1.9rem; text-align:center; padding:.05rem .25rem; border:1px solid #6d777c; border-radius:3px; background:#e3e7e9; }
+    .chip.keep { color:var(--green); font-weight:700; } .chip.drop { color:#8a9297; text-decoration:line-through; }
+    .chip.cur { border-color:var(--amber); box-shadow:0 0 0 2px #e0a32e; }
     .lad .lnote { width:100%; color:var(--dim); font-size:.72rem; padding-left:5.75rem; }
+    .ch-off { display:none !important; }
+    /* Wide screens: the page fits one window; each side panel scrolls by itself if it must,
+       and the screen(s) on the selected channel grow into the free height. */
+    @media (min-width:1151px) {
+      #controls, #readout { position:sticky; top:0; max-height:calc(100vh - var(--hdr) - 1rem); overflow-y:auto; }
+      #scopes { min-height:calc(100vh - var(--hdr) - 1rem); display:flex; flex-direction:column; }
+      #scopes .grow { flex:1 1 0; min-height:220px; }
+      #scopes div.grow:not(.screen) { display:flex; flex-direction:column; }
+      #scopes .grow > .screen { flex:1 1 0; min-height:200px; height:auto; }
+      #scopes .screen.grow, #scopes .grow > .screen { aspect-ratio:auto; }
+      body.multi #scopes .scope.grow { min-height:50vh; }
+    }
+    @media (max-width:1150px) { .wrap { grid-template-columns:1fr; } #scopes { border:0; border-top:1.5px solid var(--line); border-bottom:1.5px solid var(--line); } }
   </style>
 </head>
 <body>
   <header>
     <h1>STRINGSCOPE</h1>
-    <span style="color:var(--dim)" id="subtitle">Bosonic string on a circle of radius R, in units α′ = 1. Each knob setting is one quantum state.</span>
+    <button class="ibtn" id="ibtn" title="About this mode" aria-label="About this mode">i</button>
+    <span id="subtitle">Bosonic string on a circle of radius R, in units α′ = 1. Each setting of the controls on the left is one quantum state.</span>
     <a href="index.html">KKLT potential explorer</a>
   </header>
   <div class="wrap">
     <section class="panel" id="controls">
       <h2>Controls</h2>
-      <div class="ctl seg"><button id="t-bos" class="on">Bosonic 26-D</button><button id="t-sup">Superstring 10-D</button><button id="t-m">M-theory 11-D</button></div>
+      <div class="ctl seg"><button id="t-bos" class="on">Bosonic<br>26-D</button><button id="t-sup">Super<br>10-D</button><button id="t-m">M-theory<br>11-D</button></div>
       <div class="super-only">
         <div class="ctl seg"><button id="ty-IIA">Type IIA</button><button id="ty-IIB" class="on">Type IIB</button></div>
         <div class="ctl"><label style="justify-content:flex-start;gap:.4rem"><input type="checkbox" id="gso" checked> GSO projection (removes the tachyon)</label></div>
       </div>
       <div class="m-only">
         <div class="ctl seg"><button id="br-M2" class="on">M2 wrapped on x¹⁰</button><button id="br-M5">M5 slice</button></div>
-        <div class="ctl"><label>String coupling g<sub>s</sub> <b id="gs-v"></b></label><input type="range" id="gs" min="0.05" max="3" step="0.05" value="0.3"></div>
-        <div class="ctl m2-only"><label>Momentum n around x¹⁰ (D0 charge) <b id="n11-v"></b></label><input type="range" id="n11" min="0" max="3" step="1" value="0"></div>
+        <div class="ctl rng"><label>String coupling g<sub>s</sub> <b id="gs-v"></b></label><input type="range" id="gs" min="0.05" max="3" step="0.05" value="0.3"></div>
+        <div class="ctl rng m2-only"><label>Momentum n around x¹⁰ (D0 charge) <b id="n11-v"></b></label><input type="range" id="n11" min="0" max="3" step="1" value="0"></div>
         <div class="ctl m5-only"><label style="justify-content:flex-start;gap:.4rem"><input type="checkbox" id="sd"> Impose H = ⋆H (self-duality)</label></div>
       </div>
       <div class="ctl seg str-only"><button id="m-closed" class="on">Closed loop</button><button id="m-open">Open string</button></div>
       <div class="ctl str-only"><label>Preset</label><select id="preset" style="width:100%"></select></div>
-      <div class="ctl"><label>Radius R <b id="R-v"></b></label><input type="range" id="R" min="0.5" max="3" step="0.1" value="1.5"></div>
+      <div class="ctl rng"><label>Radius R <b id="R-v"></b></label><input type="range" id="R" min="0.5" max="3" step="0.1" value="1.5"></div>
       <div class="closed-only">
-        <div class="ctl"><label>KK momentum k <b id="k-v"></b></label><input type="range" id="k" min="-3" max="3" step="1" value="0"></div>
-        <div class="ctl"><label>Winding w <b id="w-v"></b></label><input type="range" id="w" min="-3" max="3" step="1" value="0"></div>
+        <div class="ctl rng"><label>KK momentum k <b id="k-v"></b></label><input type="range" id="k" min="-3" max="3" step="1" value="0"></div>
+        <div class="ctl rng"><label>Winding w <b id="w-v"></b></label><input type="range" id="w" min="-3" max="3" step="1" value="0"></div>
         <div class="ctl"><button id="tdual" style="width:100%">T-duality: R → 1/R, k ↔ w</button></div>
       </div>
       <div class="open-only">
-        <div class="ctl"><label>Brane separation L <b id="L-v"></b></label><input type="range" id="L" min="0" max="10" step="0.5" value="0"></div>
+        <div class="ctl rng"><label>Brane separation L <b id="L-v"></b></label><input type="range" id="L" min="0" max="10" step="0.5" value="0"></div>
       </div>
       <div id="banks" class="str-only"></div>
       <div class="bank">
-        <div class="ctl"><label>Scope speed (τ per second) <b id="spd-v"></b></label><input type="range" id="spd" min="0" max="3" step="0.1" value="1"></div>
+        <div class="ctl rng"><label>Speed (τ/s) <b id="spd-v"></b></label><input type="range" id="spd" min="0" max="3" step="0.1" value="1"></div>
         <div class="row"><button id="play" style="flex:1">Pause</button><select id="persist" style="flex:1"><option value="0.25">Short trails</option><option value="0.07">Long trails</option><option value="1">No trails</option></select></div>
       </div>
     </section>
 
-    <section class="panel">
-      <h2 id="ch1-h">CH 1: the string X. The dashed ring is the compact dimension y; x¹ points out from it and x² points up. Drag to rotate</h2>
-      <div class="scope"><canvas id="bg"></canvas><canvas id="fg"></canvas></div>
-      <div class="m-only">
+    <section class="panel" id="scopes">
+      <div class="chstrip"><div class="knobbox" id="disp"></div><h2 id="ch1-h" data-ch="1">CH 1: the string X. The dashed ring is the compact dimension y; x¹ points out from it and x² points up. Drag to rotate</h2></div>
+      <div class="screen scope" data-ch="1"><canvas id="bg"></canvas><canvas id="fg"></canvas></div>
+      <div class="m-only" data-ch="1">
         <h2 class="m5-only" style="margin-top:.6rem">M5 field strength H = dB: a 3-form on the 6-D worldvolume</h2>
         <div class="m5-only" id="hgrid"></div>
-        <h2 style="margin-top:.6rem">11-D → Type IIA on the M-circle x¹⁰ (massless states)</h2>
+        <h2>11-D → Type IIA on the M-circle x¹⁰ (massless states)</h2>
         <table class="read" id="red"></table>
       </div>
-      <h2 class="str-only" style="margin-top:.6rem">CH 2–4: displacement vs σ</h2>
-      <div class="ch2 str-only"><canvas id="trace"></canvas>
+      <h2 class="str-only" data-ch="24">CH 2–4: displacement vs σ</h2>
+      <div class="screen ch2 str-only" data-ch="24"><canvas id="trace"></canvas>
         <span class="tag" style="left:8px;top:4px;color:var(--phos)">x¹ (radial)</span>
         <span class="tag" style="left:110px;top:4px;color:var(--amber)">x² (up)</span>
         <span class="tag" style="left:200px;top:4px;color:var(--cyan)">δy (along ring)</span>
         <span class="tag super-only" style="left:330px;top:4px;color:#ff7ad9">ψ, ψ̃ (fermions, real part)</span>
       </div>
-      <div class="super-only">
-        <h2 style="margin-top:.6rem">CH 5: worldsheet fermions ψ around σ (turns with CH 1)</h2>
-        <div class="ch5"><canvas id="ferm"></canvas></div>
+      <div class="super-only" data-ch="5">
+        <h2>CH 5: worldsheet fermions ψ around σ (turns with CH 1)</h2>
+        <div class="screen ch5"><canvas id="ferm"></canvas></div>
       </div>
-      <div class="sm-only">
-        <h2 style="margin-top:.6rem">CH 6: internal space. Its axes are components, not directions in space</h2>
+      <div class="sm-only" data-ch="6">
+        <h2>CH 6: internal space. Its axes are components, not directions in space</h2>
         <div class="ctl seg super-only"><button id="sp-vec" class="on">ψ<sup>μ</sup> in ℝ¹⁰ (the RNS field)</button><button id="sp-spin">R ground state (a spinor)</button></div>
         <div class="sprow">
           <label>Rotate in plane <select id="sp-a"></select> <select id="sp-b"></select></label>
@@ -136,12 +197,12 @@
           <label><input type="checkbox" id="sp-link"> θ follows the CH 1 drag</label>
           <button id="sp-cliff" class="spin-only">Show γᵃγᵇψ and γᵇγᵃψ</button>
         </div>
-        <div class="ch6"><canvas id="spin"></canvas></div>
+        <div class="screen ch6"><canvas id="spin"></canvas></div>
         <ul class="feat" id="sp-feat"></ul>
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="readout">
       <div class="particle">
         <div class="sym" id="p-sym"></div>
         <div class="name" id="p-name"></div>
@@ -161,11 +222,16 @@
       <div class="super-only" id="ladder"></div>
       <h2 class="str-only">The math behind the trace</h2>
       <div class="eq str-only" id="eq"></div>
-      <p class="note" id="note">This is the textbook bosonic string (26-D, so it has a tachyon) with one dimension curled into a circle. It is not the full Calabi–Yau compactification of Type IIB KKLT. It shows how particles appear as string vibrations, and how the size of the extra dimension (the radion, a toy version of KKLT's volume modulus t) shifts the mass tower. Amplitudes show the classical coherent-state size, which is proportional to √(q/n).</p>
     </section>
   </div>
+  <dialog id="info" aria-labelledby="info-h">
+    <h3 id="info-h">About this mode</h3>
+    <p id="note">This is the textbook bosonic string (26-D, so it has a tachyon) with one dimension curled into a circle. It is not the full Calabi–Yau compactification of Type IIB KKLT. It shows how particles appear as string vibrations, and how the size of the extra dimension (the radion, a toy version of KKLT's volume modulus t) shifts the mass tower. Amplitudes show the classical coherent-state size, which is proportional to √(q/n).</p>
+    <p id="info-disp"></p>
+    <form method="dialog"><button>Close</button></form>
+  </dialog>
   <script src="spinors.js?v=3586bda9"></script>
   <script src="strings.js?v=1566cd04"></script>
-  <script src="string_scope.js?v=a28cba18"></script>
+  <script src="string_scope.js?v=f40b9a3f"></script>
 </body>
 </html>
