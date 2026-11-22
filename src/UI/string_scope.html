@@ -6,8 +6,16 @@
   <title>StringScope — vibrating string states</title>
   <meta name="description" content="StringScope: an interactive oscilloscope for string states on a circle, bosonic (26-D) or Type II superstring (10-D). Step oscillator quanta, momentum, winding and radius and watch the string vibrate as the mass formula, level matching and GSO projection update live, from the graviton and gravitino to the Ramond–Ramond forms.">
   <style>
-    :root { --plate:#b4b6aa; --plate2:#a6a89b; --line:#1d2124; --ink:#111; --dim:#45473d; --crt:#05080a; --phos:#39ff9c;
-      --green:#0b6b31; --red:#b3261e; --amber:#b87400; --hdr:48px; }
+    :root { --plate:#b4b6aa; --plate2:#a6a89b; --line:#1d2124; --ink:#111; --dim:#45473d; --crt:#05080a;
+      --green:#0b6b31; --red:#b3261e; --amber:#b87400; --hdr:48px;
+      --sc-grid:#13261f; --sc-axis:#1f3a33; --sc-ring:#2f6b57; --sc-text:#d8f5ea; --sc-dim:#6b8f84;
+      --tr1:#39ff9c; --tr2:#ffcf4a; --tr3:#4ad8ff; --tr4:#ff7ad9; --tr2d:#5c4a1c; --tr3d:#1c4a5c; }
+    /* 814X: dark grey plate, darker grey sections, black and grey keys with white legends, yellow when
+       selected, medium grey knobs. The screen prints yellow on black and draws in light blue. */
+    body.t814 { --plate:#3b3c3e; --plate2:#2a2b2d; --line:#18191a; --ink:#f2f2f2; --dim:#b5b9bd; --crt:#000000;
+      --green:#4cbb17; --red:#ff6f61; --amber:#f2c200;
+      --sc-grid:#1b1d20; --sc-axis:#3a3e44; --sc-ring:#33618a; --sc-text:#ffd400; --sc-dim:#b39a2a;
+      --tr1:#59b8ff; --tr2:#ffd400; --tr3:#4ee08f; --tr4:#ff8ad0; --tr2d:#5c4f10; --tr3d:#1d4d33; }
     * { box-sizing: border-box; }
     body { margin:0; background:var(--plate); color:var(--ink); font:14px/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif; }
     b, .mono, select, table.read td:last-child { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
@@ -64,7 +72,7 @@
     .ch2 { height:180px; margin-top:.3rem; }
     .ch5 { height:210px; margin-top:.3rem; }
     .ch6 { height:300px; margin-top:.3rem; }
-    .tag { position:absolute; font:.72rem ui-monospace, monospace; color:#8fb3a6; pointer-events:none; }
+    .tag { position:absolute; font:.72rem ui-monospace, monospace; color:var(--sc-dim); pointer-events:none; }
     #scopes > h2, #scopes [data-ch] > h2 { margin-top:.6rem; }
     .chstrip { display:flex; gap:1rem; align-items:center; margin-bottom:.2rem; }
     .chstrip h2 { margin:0 !important; flex:1; }
@@ -122,15 +130,46 @@
       #scopes .screen.grow, #scopes .grow > .screen { aspect-ratio:auto; }
       body.multi #scopes .scope.grow { min-height:50vh; }
     }
+    .theme-sw { margin-left:auto; display:flex; align-items:center; gap:.35rem; font-size:.66rem; font-weight:700; letter-spacing:.1em; color:var(--dim); cursor:pointer; user-select:none; }
+    .theme-sw input { margin:0; }
+    body.t814 header { background:linear-gradient(#2f3032, var(--plate)); }
+    body.t814 .wrap { gap:.5rem; }
+    body.t814 .panel { background:var(--plate2); border-radius:8px; }
+    body.t814 #scopes { border:0; }
+    body.t814 .panel h2 { color:#fff; }
+    body.t814 .ibtn { background:radial-gradient(circle at 35% 30%, #4a4c50, #161718 75%); color:#fff; border-color:#8a8d91; }
+    body.t814 .ibtn:hover { border-color:var(--amber); }
+    body.t814 dialog#info { background:var(--plate2); border-color:#6b6e72; }
+    body.t814 select { background:#141516; border-color:#6b6e72; }
+    body.t814 button { background:linear-gradient(#55585c, #333538); color:#fff; border:1.5px solid #75787c; border-radius:7px 14px 14px 7px; box-shadow:0 1px 2px #000a; }
+    body.t814 button:hover { border-color:#c9ccd0; }
+    body.t814 .seg button { border-radius:999px; background:#111213; border-color:#9a9da1; }
+    body.t814 button.on, body.t814 .seg button.on { background:#111213; color:#fff; border:2px solid var(--amber); box-shadow:0 0 6px #f2c20088, inset 0 1px 2px #000; }
+    body.t814 #tdual { background:linear-gradient(#3d9bff, #1667c9); border-color:#0d4c99; }
+    body.t814 #play { background:linear-gradient(#5fd02a, #3a9a10); border-color:#2a7008; }
+    body.t814 .bank, body.t814 .particle { border-color:#55575a; }
+    body.t814 .chip { background:#1c1d1f; border-color:#6b6e72; }
+    body.t814 .chip.drop { color:#7d8186; }
+    body.t814 .chip.cur { box-shadow:0 0 0 2px #f2c20099; }
+    body.t814 .parts .s { color:#ffd27a; }
+    body.t814 .knob { background:#1e1f21; }
+    body.t814 .knob .cap { background:radial-gradient(circle at 38% 32%, #b4b7bb, #85888c 55%, #5d6064); border-color:#4a4c4f; }
+    body.t814 .klab.on { color:var(--amber); }
+    body.t814 .screen { border-color:#0a0a0b; }
+    body.t814 input[type=range]::-webkit-slider-thumb { background:linear-gradient(90deg, #6e7175 0 42%, #fff 42% 58%, #6e7175 58%), #6e7175; }
+    body.t814 input[type=range]::-moz-range-thumb { background:linear-gradient(90deg, #6e7175 0 42%, #fff 42% 58%, #6e7175 58%), #6e7175; }
+    body.t814 input[type=checkbox]::before { background:linear-gradient(90deg, #6e7175 0 42%, #fff 42% 58%, #6e7175 58%); }
     @media (max-width:1150px) { .wrap { grid-template-columns:1fr; } #scopes { border:0; border-top:1.5px solid var(--line); border-bottom:1.5px solid var(--line); } }
   </style>
 </head>
 <body>
+  <script>try { if (localStorage.getItem("stringscope-theme") === "814x") document.body.classList.add("t814"); } catch (e) { /* storage blocked */ }</script>
   <header>
     <h1>STRINGSCOPE</h1>
     <button class="ibtn" id="ibtn" title="About this mode" aria-label="About this mode">i</button>
     <span id="subtitle">Bosonic string on a circle of radius R, in units α′ = 1. Each setting of the controls on the left is one quantum state.</span>
     <a href="index.html">KKLT potential explorer</a>
+    <label class="theme-sw" title="Panel and screen theme">1205B <input type="checkbox" id="theme" aria-label="814X dark theme"> 814X</label>
   </header>
   <div class="wrap">
     <section class="panel" id="controls">
@@ -175,10 +214,10 @@
       </div>
       <h2 class="str-only" data-ch="24">CH 2–4: displacement vs σ</h2>
       <div class="screen ch2 str-only" data-ch="24"><canvas id="trace"></canvas>
-        <span class="tag" style="left:8px;top:4px;color:var(--phos)">x¹ (radial)</span>
-        <span class="tag" style="left:110px;top:4px;color:var(--amber)">x² (up)</span>
-        <span class="tag" style="left:200px;top:4px;color:var(--cyan)">δy (along ring)</span>
-        <span class="tag super-only" style="left:330px;top:4px;color:#ff7ad9">ψ, ψ̃ (fermions, real part)</span>
+        <span class="tag" style="left:8px;top:4px;color:var(--tr1)">x¹ (radial)</span>
+        <span class="tag" style="left:110px;top:4px;color:var(--tr2)">x² (up)</span>
+        <span class="tag" style="left:200px;top:4px;color:var(--tr3)">δy (along ring)</span>
+        <span class="tag super-only" style="left:330px;top:4px;color:var(--tr4)">ψ, ψ̃ (fermions, real part)</span>
       </div>
       <div class="super-only" data-ch="5">
         <h2>CH 5: worldsheet fermions ψ around σ (turns with CH 1)</h2>
@@ -232,6 +271,6 @@
   </dialog>
   <script src="spinors.js?v=3586bda9"></script>
   <script src="strings.js?v=1566cd04"></script>
-  <script src="string_scope.js?v=da26352c"></script>
+  <script src="string_scope.js?v=7715f1b0"></script>
 </body>
 </html>

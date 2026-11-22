@@ -1,6 +1,14 @@
 (() => {
   const S = window.Strings;
   const $ = (id) => document.getElementById(id);
+  // Screen palette from the CSS custom properties of the selected theme (1205B or 814X).
+  const SCREEN = { bg: "--crt", grid: "--sc-grid", axis: "--sc-axis", ring: "--sc-ring", text: "--sc-text", dim: "--sc-dim",
+    t1: "--tr1", t2: "--tr2", t3: "--tr3", t4: "--tr4", t2d: "--tr2d", t3d: "--tr3d" };
+  const PAL = {};
+  const readPalette = () => { const cs = getComputedStyle(document.body); for (const [k, v] of Object.entries(SCREEN)) PAL[k] = cs.getPropertyValue(v).trim(); };
+  const rgb3 = (hex) => { const n = parseInt(hex.slice(1), 16); return `${n >> 16},${(n >> 8) & 255},${n & 255}`; };
+  const rgba = (hex, a) => `rgba(${rgb3(hex)},${a})`;
+  readPalette();
   const POLS = [["x1", "x¹"], ["x2", "x²"], ["y", "y (compact)"]];
   const bank = (n, q, pol, sector = "NS", r = 0, fpol = "x1") => ({ n, q, pol, sector, r, fpol });
   // Superstring bank: worldsheet fermion psi_{-r} in sector NS or R, plus an optional X oscillator.
@@ -342,33 +350,33 @@
     return [r.width, r.height];
   }
   function graticule(ctx, W, H, nx, ny) {
-    ctx.strokeStyle = "#13261f"; ctx.lineWidth = 1;
+    ctx.strokeStyle = PAL.grid; ctx.lineWidth = 1;
     for (let i = 0; i <= nx; i++) { ctx.beginPath(); ctx.moveTo((W * i) / nx, 0); ctx.lineTo((W * i) / nx, H); ctx.stroke(); }
     for (let j = 0; j <= ny; j++) { ctx.beginPath(); ctx.moveTo(0, (H * j) / ny); ctx.lineTo(W, (H * j) / ny); ctx.stroke(); }
-    ctx.strokeStyle = "#1f3a33"; ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+    ctx.strokeStyle = PAL.axis; ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
   }
   let geo = {};
   function drawBackground() {
     const [W, H] = fit(bg); fit(fg);
     const ctx = bg.getContext("2d");
-    ctx.fillStyle = "#05080a"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = PAL.bg; ctx.fillRect(0, 0, W, H);
     graticule(ctx, W, H, 10, 8);
     const rho = 0.3 * Math.min(W, H);
     geo = { W, H, cx: W / 2, cy: H / 2, rho, ux: rho * 0.35 };
-    ctx.setLineDash([5, 6]); ctx.strokeStyle = "#2f6b57"; ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 6]); ctx.strokeStyle = PAL.ring; ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (let i = 0; i <= 120; i++) { const [x, y] = proj(ring(i / 120 * 2 * Math.PI, 0, 0)); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
     ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = "#6b8f84"; ctx.font = "11px ui-monospace, monospace";
+    ctx.fillStyle = PAL.dim; ctx.font = "11px ui-monospace, monospace";
     ctx.fillText(`compact y, circumference 2πR = ${(2 * Math.PI * cfg.R).toFixed(2)}`, 10, H - 10);
     ctx.fillText("x¹: out from the circle · x²: up · y: around it · drag to rotate", 10, 16);
     if (cfg.mode === "open") {
       for (const [y, lab] of [[0, "brane A"], [cfg.L, "brane B"]]) {
         const th = y / cfg.R - Math.PI / 2, [x0, y0] = proj(ring(th, -0.4 * rho, 0)), [x1, y1] = proj(ring(th, 0.4 * rho, 0));
-        ctx.strokeStyle = "#ffcf4a"; ctx.lineWidth = 3;
+        ctx.strokeStyle = PAL.t2; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
         const [lx, ly] = proj(ring(th, 0.55 * rho, 0));
-        ctx.fillStyle = "#ffcf4a"; ctx.fillText(lab, lx - 22, ly + (lab === "brane A" ? -4 : 12));
+        ctx.fillStyle = PAL.t2; ctx.fillText(lab, lx - 22, ly + (lab === "brane A" ? -4 : 12));
       }
     }
     trace.dims = fit(tr); trace.fdims = fit(fe); trace.sdims = fit(spc);
@@ -422,27 +430,27 @@
     if (cfg.theory === "M") { drawBrane(ctx); drawSpin(); return; }
     const pts = S.shape(cfg, tau, 360);
     const extent = pts.reduce((m, p) => Math.max(m, Math.abs(p.x1), Math.abs(p.x2), Math.abs(p.y - pts[0].y)), 0);
-    ctx.shadowColor = "#39ff9c"; ctx.shadowBlur = 10;
+    ctx.shadowColor = PAL.t1; ctx.shadowBlur = 10;
     if (extent < 1e-9) {
       const [x, y] = toXY(pts[0]);
       for (let i = 0; i < 6; i++) {
-        ctx.fillStyle = "rgba(57,255,156,0.5)";
+        ctx.fillStyle = rgba(PAL.t1, 0.5);
         ctx.beginPath(); ctx.arc(x + (Math.random() - 0.5) * 6, y + (Math.random() - 0.5) * 6, 1.6, 0, 2 * Math.PI); ctx.fill();
       }
-      ctx.fillStyle = "#39ff9c"; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = PAL.t1; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 2 * Math.PI); ctx.fill();
       if (cfg.theory === "super") {
-        ctx.shadowBlur = 0; ctx.fillStyle = "#ff7ad9"; ctx.font = "11px ui-monospace, monospace";
+        ctx.shadowBlur = 0; ctx.fillStyle = PAL.t4; ctx.font = "11px ui-monospace, monospace";
         ctx.fillText("X at rest: only ψ vibrates (DISPLAY → CH 5)", 10, 32);
       }
     } else {
-      ctx.strokeStyle = "#39ff9c"; ctx.lineWidth = 2;
+      ctx.strokeStyle = PAL.t1; ctx.lineWidth = 2;
       ctx.beginPath();
       pts.forEach((p, i) => { const [x, y] = toXY(p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
       if (cfg.mode === "closed") ctx.closePath();
       ctx.stroke();
       if (cfg.mode === "closed") {
         const [x, y] = toXY(pts[0]);
-        ctx.fillStyle = "#ffcf4a"; ctx.beginPath(); ctx.arc(x, y, 3, 0, 2 * Math.PI); ctx.fill();
+        ctx.fillStyle = PAL.t2; ctx.beginPath(); ctx.arc(x, y, 3, 0, 2 * Math.PI); ctx.fill();
       }
     }
     ctx.shadowBlur = 0;
@@ -459,17 +467,17 @@
       const rt = Math.max(1.5, Math.min(0.85 * geo.rho, (geo.rho * cfg.gs) / cfg.R));
       const pt = (th, ph) => proj(ring(th, rt * Math.cos(ph), rt * Math.sin(ph)));
       const NU = 96, rings = rt < 4 ? 1 : 12, spokes = rt < 4 ? 0 : 32;
-      for (let j = 0; j < rings; j++) line([...Array(NU + 1).keys()].map((i) => pt((2 * Math.PI * i) / NU, (2 * Math.PI * j) / rings)), "rgba(57,255,156,0.55)", rt < 4 ? 2 : 1);
-      for (let i = 0; i < spokes; i++) line([...Array(25).keys()].map((k) => pt((2 * Math.PI * i) / spokes, (2 * Math.PI * k) / 24)), "rgba(57,255,156,0.3)");
-      for (let k = 0; k < cfg.n11; k++) line([...Array(NU + 1).keys()].map((i) => pt((2 * Math.PI * i) / NU, (2 * Math.PI * k) / cfg.n11 + tau)), "#ffcf4a", 2);
-      ctx.fillStyle = "#ff7ad9";
+      for (let j = 0; j < rings; j++) line([...Array(NU + 1).keys()].map((i) => pt((2 * Math.PI * i) / NU, (2 * Math.PI * j) / rings)), rgba(PAL.t1, 0.55), rt < 4 ? 2 : 1);
+      for (let i = 0; i < spokes; i++) line([...Array(25).keys()].map((k) => pt((2 * Math.PI * i) / spokes, (2 * Math.PI * k) / 24)), rgba(PAL.t1, 0.3));
+      for (let k = 0; k < cfg.n11; k++) line([...Array(NU + 1).keys()].map((i) => pt((2 * Math.PI * i) / NU, (2 * Math.PI * k) / cfg.n11 + tau)), PAL.t2, 2);
+      ctx.fillStyle = PAL.t4;
       ctx.fillText(cfg.gs < 1 ? "g_s < 1: x¹⁰ is small, so the wrapped membrane looks like a string: Type IIA" : "g_s > 1: the tube x¹⁰ opens up, the 11th dimension appears: M-theory", 10, 32);
       if (cfg.n11) ctx.fillText(`n = ${cfg.n11}: momentum around x¹⁰ = ${cfg.n11} D0-brane${cfg.n11 > 1 ? "s" : ""}, mass n/R₁₁`, 10, 46);
     } else {
       const sheet = (th, u) => proj(ring(th, 0.5 * geo.rho * u, 0.12 * geo.rho * Math.sin(3 * th - tau) * Math.cos((Math.PI * u) / 2)));
-      for (let j = 0; j <= 8; j++) line([...Array(97).keys()].map((i) => sheet((2 * Math.PI * i) / 96, -1 + j / 4)), "rgba(57,255,156,0.5)");
-      for (let i = 0; i < 36; i++) line([...Array(17).keys()].map((k) => sheet((2 * Math.PI * i) / 36, -1 + k / 8)), "rgba(57,255,156,0.25)");
-      ctx.fillStyle = "#ff7ad9";
+      for (let j = 0; j <= 8; j++) line([...Array(97).keys()].map((i) => sheet((2 * Math.PI * i) / 96, -1 + j / 4)), rgba(PAL.t1, 0.5));
+      for (let i = 0; i < 36; i++) line([...Array(17).keys()].map((k) => sheet((2 * Math.PI * i) / 36, -1 + k / 8)), rgba(PAL.t1, 0.25));
+      ctx.fillStyle = PAL.t4;
       ctx.fillText("M5: a 2-D slice (along y and x¹) of its 5 space directions; the other 3 are not drawn", 10, 32);
     }
   }
@@ -561,7 +569,7 @@
   const spCache = {};
   function drawSpin() {
     const [W, H] = trace.sdims, ctx = spc.getContext("2d"), vec = sp.mode === "vec";
-    ctx.fillStyle = "#05080a"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = PAL.bg; ctx.fillRect(0, 0, W, H);
     const theta = sp.link ? 2 * (view.yaw - sp.yaw0) : (0.5 * tau) % (4 * Math.PI);
     const ax = sp.axes[sp.mode], a = sp.a - 1, b = sp.b - 1;
     // Show an occupied ψ quantum (NS or R) if either side has one, otherwise the first NS side.
@@ -621,14 +629,14 @@
     const labels = ax.map((k) => $(`sp-x`).querySelector(`option[value="${k}"]`)?.textContent || "");
     [[1, 0, 0], [0, 1, 0], [0, 0, 1]].forEach((u, j) => {
       const [x0, y0] = P(u.map((c) => -c * big)), [x1, y1] = P(u.map((c) => c * big));
-      ctx.strokeStyle = "#1f3a33"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-      ctx.fillStyle = "#6b8f84"; ctx.fillText(labels[j], x1 + 3, y1);
+      ctx.strokeStyle = PAL.axis; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      ctx.fillStyle = PAL.dim; ctx.fillText(labels[j], x1 + 3, y1);
     });
     const done = Math.max(0, Math.min(M, Math.round((((theta % (4 * Math.PI)) + 4 * Math.PI) % (4 * Math.PI)) / (4 * Math.PI) * M)));
     ctx.lineWidth = 1.6;
     for (let i = 0; i < M; i++) {
       const [x0, y0] = P(pts[i]), [x1, y1] = P(pts[i + 1]);
-      ctx.strokeStyle = i < M / 2 ? (i < done ? "#ffcf4a" : "#5c4a1c") : (i < done ? "#4ad8ff" : "#1c4a5c");
+      ctx.strokeStyle = i < M / 2 ? (i < done ? PAL.t2 : PAL.t2d) : (i < done ? PAL.t3 : PAL.t3d);
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
     }
     const dot = (q, color, label, solid = true, dy = -6) => {
@@ -636,19 +644,19 @@
       ctx.fillStyle = color; ctx.strokeStyle = color; ctx.lineWidth = 2; solid ? ctx.fill() : ctx.stroke();
       if (label) { ctx.fillStyle = color; ctx.fillText(label, x + 8, y + dy); }
     };
-    dot(pts[0], "#d8f5ea", "θ = 0: ψ");
-    dot(pts[M / 2], "#ff7ad9", vec ? "θ = 2π: back to ψ" : "θ = 2π: −ψ", true, vec ? 10 : -6);
-    for (const [path, color, lab] of extra.map((e, i) => [e, i ? "#4ad8ff" : "#ffcf4a", i ? "γᵇγᵃψ" : "γᵃγᵇψ"])) {
+    dot(pts[0], PAL.text, "θ = 0: ψ");
+    dot(pts[M / 2], PAL.t4, vec ? "θ = 2π: back to ψ" : "θ = 2π: −ψ", true, vec ? 10 : -6);
+    for (const [path, color, lab] of extra.map((e, i) => [e, i ? PAL.t3 : PAL.t2, i ? "γᵇγᵃψ" : "γᵃγᵇψ"])) {
       ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.beginPath();
       path.forEach((q, i) => { const [x, y] = P(q); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); ctx.setLineDash([]);
       dot(path[2], color, lab, true, 16);
     }
     const ch = vec || isM() ? 0 : spinChirality();
     const cur = pick(at(theta));
-    if (ch === null) { dot(cur, "#39ff9c", ""); const [x, y] = P(cur); ctx.fillStyle = "#05080a"; ctx.fillRect(x - 6, y, 12, 6); ctx.strokeStyle = "#39ff9c"; ctx.beginPath(); ctx.arc(x, y, 5, 0, 2 * Math.PI); ctx.stroke(); }
-    else dot(cur, "#39ff9c", "", ch === 0);
-    ctx.fillStyle = "#d8f5ea"; ctx.fillText(`θ = ${(theta / Math.PI).toFixed(2)}π in the (${sp.a}, ${sp.b}) plane${sp.link ? " · from the CH 1 drag" : ""}`, 8, 14);
-    ctx.fillStyle = "#6b8f84"; ctx.fillText(note, 8, 28);
+    if (ch === null) { dot(cur, PAL.t1, ""); const [x, y] = P(cur); ctx.fillStyle = PAL.bg; ctx.fillRect(x - 6, y, 12, 6); ctx.strokeStyle = PAL.t1; ctx.beginPath(); ctx.arc(x, y, 5, 0, 2 * Math.PI); ctx.stroke(); }
+    else dot(cur, PAL.t1, "", ch === 0);
+    ctx.fillStyle = PAL.text; ctx.fillText(`θ = ${(theta / Math.PI).toFixed(2)}π in the (${sp.a}, ${sp.b}) plane${sp.link ? " · from the CH 1 drag" : ""}`, 8, 14);
+    ctx.fillStyle = PAL.dim; ctx.fillText(note, 8, 28);
     ctx.fillText(vec ? "amber 0–2π, cyan 2π–4π: the second turn retraces the first" : "amber 0–2π ends at −ψ; cyan 2π–4π brings it back", 8, H - 8);
   }
   spc.style.touchAction = "pan-y";
@@ -666,7 +674,7 @@
   // the phase r(τ ± σ). Over one loop it turns by 2πr: a half-turn (Möbius) for NS, whole turns for R.
   function drawFermions() {
     const [W, H] = trace.fdims, ctx = fe.getContext("2d");
-    ctx.fillStyle = "#05080a"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = PAL.bg; ctx.fillRect(0, 0, W, H);
     const open = cfg.mode === "open";
     const sides = open ? [["ψ, open string (σ doubled to 2π)", cfg.left, 1]] : [["ψ, left movers", cfg.left, 1], ["ψ̃, right movers", cfg.right, -1]];
     sides.forEach(([title, b, dir], i) => {
@@ -685,7 +693,7 @@
         const [C0, u0] = at((2 * Math.PI * j) / M), [C1, u1] = at((2 * Math.PI * (j + 1)) / M);
         for (const sgn of [1, -1]) {
           const pts = [C0, C0.map((v, k) => v + sgn * h * u0[k]), C1.map((v, k) => v + sgn * h * u1[k]), C1].map(P);
-          quads.push({ pts, d: pts.reduce((m, q) => m + q[2], 0) / 4, color: sgn > 0 ? "255,207,74" : "74,216,255" });
+          quads.push({ pts, d: pts.reduce((m, q) => m + q[2], 0) / 4, color: sgn > 0 ? rgb3(PAL.t2) : rgb3(PAL.t3) });
         }
       }
       quads.sort((a, b2) => a.d - b2.d);
@@ -696,29 +704,29 @@
       const [C, u] = at(0), a0 = P(C.map((v, k) => v - h * 1.25 * u[k])), a1 = P(C.map((v, k) => v + h * 1.25 * u[k]));
       ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.stroke();
-      ctx.fillStyle = "#d8f5ea"; ctx.font = "11px ui-monospace, monospace"; ctx.textAlign = "center";
+      ctx.fillStyle = PAL.text; ctx.font = "11px ui-monospace, monospace"; ctx.textAlign = "center";
       ctx.fillText(title, cx, 13);
       const ns = b.sector === "NS";
       const mode = empty ? (ns ? "empty: lowest mode r = ½ shown faint" : "zero mode: the spinor ground state")
         : `mode ψ₋${hf(b.r)}: ${hf(b.r)} turn per loop`;
-      ctx.fillStyle = ns ? "#ff7ad9" : "#39ff9c";
+      ctx.fillStyle = ns ? PAL.t4 : PAL.t1;
       ctx.fillText(ns ? "NS: ψ(σ+2π) = −ψ(σ), colours swap at the seam" : "R: ψ(σ+2π) = +ψ(σ), colours match at the seam", cx, H - 22);
-      ctx.fillStyle = "#6b8f84"; ctx.fillText(mode, cx, H - 8);
+      ctx.fillStyle = PAL.dim; ctx.fillText(mode, cx, H - 8);
       ctx.textAlign = "left";
     });
   }
 
   function drawTrace(pts) {
     const [W, H] = trace.dims, ctx = tr.getContext("2d");
-    ctx.fillStyle = "#05080a"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = PAL.bg; ctx.fillRect(0, 0, W, H);
     graticule(ctx, W, H, 12, 4);
     const span = pts[pts.length - 1].s, scale = H / 2 / 3.2;
     const zero = cfg.mode === "open" ? (p) => (cfg.L * p.s) / Math.PI : (p) => (cfg.k / cfg.R) * tau + cfg.w * cfg.R * p.s;
-    const series = [["x1", "#39ff9c", (p) => p.x1], ["x2", "#ffcf4a", (p) => p.x2], ["y", "#4ad8ff", (p) => p.y - zero(p)]];
+    const series = [["x1", PAL.t1, (p) => p.x1], ["x2", PAL.t2, (p) => p.x2], ["y", PAL.t3, (p) => p.y - zero(p)]];
     if (cfg.theory === "super") {
       const L = cfg.left, Rb = cfg.right;
-      if (L.r > 0) series.push(["psi", "#ff7ad9", (p) => 1.5 * Math.cos(L.r * (tau + p.s))]);
-      if (cfg.mode === "closed" && Rb.r > 0) series.push(["psit", "#ff7ad9", (p) => 1.5 * Math.cos(Rb.r * (tau - p.s)), [5, 4]]);
+      if (L.r > 0) series.push(["psi", PAL.t4, (p) => 1.5 * Math.cos(L.r * (tau + p.s))]);
+      if (cfg.mode === "closed" && Rb.r > 0) series.push(["psit", PAL.t4, (p) => 1.5 * Math.cos(Rb.r * (tau - p.s)), [5, 4]]);
     }
     for (const [, color, get, dash] of series) {
       ctx.setLineDash(dash || []);
@@ -728,7 +736,7 @@
       ctx.stroke();
     }
     ctx.setLineDash([]);
-    ctx.shadowBlur = 0; ctx.fillStyle = "#6b8f84"; ctx.font = "11px ui-monospace, monospace";
+    ctx.shadowBlur = 0; ctx.fillStyle = PAL.dim; ctx.font = "11px ui-monospace, monospace";
     ctx.fillText("σ = 0", 4, H - 6); ctx.fillText(cfg.mode === "open" ? "σ = π" : "σ = 2π", W - 44, H - 6);
     ctx.fillText(`τ = ${tau.toFixed(2)}`, W - 80, 14);
   }
@@ -804,6 +812,13 @@
     });
   }
   $("ibtn").onclick = () => $("info").showModal();
+  $("theme").checked = document.body.classList.contains("t814");
+  $("theme").onchange = () => {
+    const dark = $("theme").checked;
+    document.body.classList.toggle("t814", dark);
+    try { localStorage.setItem("stringscope-theme", dark ? "814x" : "1205b"); } catch (e) { /* storage blocked */ }
+    readPalette(); dirty = true;
+  };
   const fitHeader = () => document.documentElement.style.setProperty("--hdr", `${document.querySelector("header").offsetHeight}px`);
   fitHeader();
   window.addEventListener("resize", fitHeader);
