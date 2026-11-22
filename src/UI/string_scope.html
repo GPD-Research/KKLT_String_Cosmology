@@ -144,8 +144,10 @@
       body.multi #scopes .scope.grow { min-height:25vh; }
       body.t814 #scopes, body.t814 #readout { border:0; }
     }
-    .theme-sw { margin-left:auto; display:flex; align-items:center; gap:.35rem; font-size:.66rem; font-weight:700; letter-spacing:.1em; color:var(--dim); cursor:pointer; user-select:none; }
-    .theme-sw input { margin:0; }
+    /* Three-position slide switch: light 1205B, medium C1-55, dark 814X. */
+    .theme-sw { margin-left:auto; display:grid; grid-template-columns:repeat(3, 3.4rem); text-align:center; font-size:.6rem; font-weight:700; letter-spacing:.08em; color:var(--dim); user-select:none; }
+    .theme-sw span { cursor:pointer; } .theme-sw span.on { color:var(--ink); }
+    .theme-sw input { grid-column:1 / -1; justify-self:center; width:6.8rem; height:18px; }
     body.t814 header { background:linear-gradient(#2f3032, var(--plate)); }
     body.t814 .wrap { gap:.5rem; }
     body.t814 .panel { background:var(--plate2); border-radius:8px; }
@@ -170,6 +172,36 @@
     body.t814 .knob .cap { background:radial-gradient(circle at 38% 32%, #b4b7bb, #85888c 55%, #5d6064); border-color:#4a4c4f; }
     body.t814 .klab.on { color:var(--amber); }
     body.t814 .screen { border-color:#0a0a0b; }
+    /* C1-55 (USSR): muted light-blue plate split by thin black lines, black legends, medium-blue titles,
+       pale green two-pointed knob skirts round a silver cap, and a dark tan screen drawing in bright green. */
+    body.tc155 { --plate:#a7b6c3; --plate2:#9badbb; --line:#111; --ink:#0d0d0d; --dim:#2f3a44; --crt:#3b3226; --blue:#1f4f9e;
+      --green:#0b5e2b; --red:#a3201a; --amber:#8a5a00;
+      --sc-grid:#4a4031; --sc-axis:#63563f; --sc-ring:#6f8a4e; --sc-text:#c9f0a8; --sc-dim:#b3a27c;
+      --tr1:#5cff5a; --tr2:#ffcc4d; --tr3:#73dcff; --tr4:#ff94c2; --tr2d:#6a5524; --tr3d:#2f5a66; }
+    body.tc155 header { background:linear-gradient(#b6c4cf, var(--plate)); border-bottom-width:1.5px; }
+    body.tc155 header h1, body.tc155 .panel h2, body.tc155 .particle .sym, body.tc155 .particle .name, body.tc155 .knobbox .kt { color:var(--blue); }
+    body.tc155 header h1 { font-size:1.3rem; } body.tc155 .panel h2 { font-size:.8rem; }
+    body.tc155 #scopes { border-width:1px; }
+    body.tc155 .ibtn { background:radial-gradient(circle at 35% 30%, #eef3e6, #c9d6bf 70%, #a5b49a); border-color:#222; }
+    body.tc155 dialog#info { background:#bccad5; border-color:#111; }
+    body.tc155 select, body.tc155 .chip { background:#c3cfd9; border-color:#333; }
+    body.tc155 button { background:linear-gradient(#c3cfd9, #9eafbd); border-color:#222; }
+    body.tc155 button.on, body.tc155 .seg button.on { background:linear-gradient(#dfe8d6, #bccbb0); color:#000; border:1.5px solid #000; box-shadow:inset 0 1px 3px #0006; }
+    body.tc155 .bank, body.tc155 .particle { border-color:#111; }
+    body.tc155 .parts .s { color:var(--blue); }
+    body.tc155 .chip.cur { box-shadow:0 0 0 2px #c08a1e; }
+    body.tc155 .screen { border-color:#8f9a8e; box-shadow:0 0 0 3px #b5bdb2, 0 2px 4px #0005, inset 0 0 18px #000; }
+    body.tc155 input[type=range]::-webkit-slider-thumb { background:linear-gradient(90deg, #d8d2bf 0 42%, #6e6857 42% 58%, #d8d2bf 58%), #d8d2bf; border-color:#333; }
+    body.tc155 input[type=range]::-moz-range-thumb { background:linear-gradient(90deg, #d8d2bf 0 42%, #6e6857 42% 58%, #d8d2bf 58%), #d8d2bf; border-color:#333; }
+    body.tc155 input[type=checkbox]::before { background:linear-gradient(90deg, #d8d2bf 0 42%, #6e6857 42% 58%, #d8d2bf 58%); border-color:#333; }
+    /* The skirt is a pale green lens with two points; the black mark on one point is the pointer. */
+    body.tc155 .knob { background:transparent; box-shadow:none; }
+    body.tc155 .knob .cap { background:none; border:0; }
+    body.tc155 .knob .cap::before { content:""; position:absolute; inset:-2px; border-radius:0 50%; transform:rotate(45deg);
+      background:linear-gradient(135deg, #111 0 11%, transparent 11%), radial-gradient(circle at 40% 40%, #e6eedc, #c3d1b6 70%, #a3b294);
+      box-shadow:1px 3px 4px #0007; }
+    body.tc155 .knob .cap::after { left:5px; top:5px; right:5px; bottom:5px; width:auto; height:auto; margin:0; border-radius:50%;
+      background:radial-gradient(circle at 38% 32%, #fff, #d4d8da 50%, #8f979c); box-shadow:inset 0 0 2px #0008; }
     body.t814 input[type=range]::-webkit-slider-thumb { background:linear-gradient(90deg, #6e7175 0 42%, #fff 42% 58%, #6e7175 58%), #6e7175; }
     body.t814 input[type=range]::-moz-range-thumb { background:linear-gradient(90deg, #6e7175 0 42%, #fff 42% 58%, #6e7175 58%), #6e7175; }
     body.t814 input[type=checkbox]::before { background:linear-gradient(90deg, #6e7175 0 42%, #fff 42% 58%, #6e7175 58%); }
@@ -177,13 +209,14 @@
   </style>
 </head>
 <body class="t814">
-  <script>try { if (localStorage.getItem("stringscope-theme") === "1205b") document.body.classList.remove("t814"); } catch (e) { /* storage blocked */ }</script>
+  <script>try { const t = localStorage.getItem("stringscope-theme"), b = document.body.classList; if (t === "1205b") b.remove("t814"); else if (t === "c155") b.replace("t814", "tc155"); } catch (e) { /* storage blocked */ }</script>
   <header>
     <h1>STRINGSCOPE</h1>
     <button class="ibtn" id="ibtn" title="About this mode" aria-label="About this mode">i</button>
     <span id="subtitle">Bosonic string on a circle of radius R, in units α′ = 1. Each setting of the controls on the left is one quantum state.</span>
     <a href="index.html">KKLT potential explorer</a>
-    <label class="theme-sw" title="Panel and screen theme">1205B <input type="checkbox" id="theme" aria-label="814X dark theme"> 814X</label>
+    <div class="theme-sw" title="Panel and screen theme"><span data-t="0">1205B</span><span data-t="1">C1-55</span><span data-t="2">814X</span>
+      <input type="range" id="theme" min="0" max="2" step="1" value="2" aria-label="Theme"></div>
   </header>
   <div class="wrap">
     <section class="panel" id="controls">
@@ -285,6 +318,6 @@
   </dialog>
   <script src="spinors.js?v=3586bda9"></script>
   <script src="strings.js?v=1566cd04"></script>
-  <script src="string_scope.js?v=7715f1b0"></script>
+  <script src="string_scope.js?v=4e64e4b1"></script>
 </body>
 </html>

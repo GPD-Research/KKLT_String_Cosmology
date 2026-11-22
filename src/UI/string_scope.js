@@ -1,7 +1,7 @@
 (() => {
   const S = window.Strings;
   const $ = (id) => document.getElementById(id);
-  // Screen palette from the CSS custom properties of the selected theme (1205B or 814X).
+  // Screen palette from the CSS custom properties of the selected theme (1205B, C1-55 or 814X).
   const SCREEN = { bg: "--crt", grid: "--sc-grid", axis: "--sc-axis", ring: "--sc-ring", text: "--sc-text", dim: "--sc-dim",
     t1: "--tr1", t2: "--tr2", t3: "--tr3", t4: "--tr4", t2d: "--tr2d", t3d: "--tr3d" };
   const PAL = {};
@@ -812,13 +812,18 @@
     });
   }
   $("ibtn").onclick = () => $("info").showModal();
-  $("theme").checked = document.body.classList.contains("t814");
-  $("theme").onchange = () => {
-    const dark = $("theme").checked;
-    document.body.classList.toggle("t814", dark);
-    try { localStorage.setItem("stringscope-theme", dark ? "814x" : "1205b"); } catch (e) { /* storage blocked */ }
+  const THEMES = [["1205b", "", "1205B light"], ["c155", "tc155", "C1-55 medium"], ["814x", "t814", "814X dark"]];
+  function setTheme(i, save) {
+    for (const [, cls] of THEMES) if (cls) document.body.classList.remove(cls);
+    if (THEMES[i][1]) document.body.classList.add(THEMES[i][1]);
+    $("theme").value = i; $("theme").setAttribute("aria-valuetext", THEMES[i][2]);
+    document.querySelectorAll(".theme-sw span").forEach((el) => el.classList.toggle("on", +el.dataset.t === i));
+    if (save) try { localStorage.setItem("stringscope-theme", THEMES[i][0]); } catch (e) { /* storage blocked */ }
     readPalette(); dirty = true;
-  };
+  }
+  setTheme(Math.max(0, THEMES.findIndex(([, cls]) => cls && document.body.classList.contains(cls))), false);
+  $("theme").oninput = () => setTheme(+$("theme").value, true);
+  document.querySelectorAll(".theme-sw span").forEach((el) => (el.onclick = () => setTheme(+el.dataset.t, true)));
   const fitHeader = () => document.documentElement.style.setProperty("--hdr", `${document.querySelector("header").offsetHeight}px`);
   fitHeader();
   window.addEventListener("resize", fitHeader);
