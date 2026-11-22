@@ -757,7 +757,7 @@
     super: [["CH 1", ["1"]], ["CH 2–4", ["24"]], ["CH 5", ["5"]], ["CH 6", ["6"]], ["ALL", ["1", "24", "5", "6"]]],
     M: [["CH 1", ["1"]], ["CH 6", ["6"]], ["BOTH", ["1", "6"]]],
   };
-  const disp = { bosonic: 2, super: 0, M: 0 };
+  const disp = { bosonic: 2, super: 4, M: 0 };
   const KNOB = { r: 40, cx: 75, cy: 44, span: 240 };
   $("disp").innerHTML = '<div class="knob" id="knob" tabindex="0" role="slider" aria-label="Display channel"><div class="cap"></div></div><div class="kt">DISPLAY</div>';
   const knobAngle = (i, n) => (n === 1 ? 0 : -KNOB.span / 2 + (KNOB.span * i) / (n - 1)) * (n <= 3 ? 0.5 : 1);
