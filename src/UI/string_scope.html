@@ -119,16 +119,30 @@
     .chip.cur { border-color:var(--amber); box-shadow:0 0 0 2px #e0a32e; }
     .lad .lnote { width:100%; color:var(--dim); font-size:.72rem; padding-left:5.75rem; }
     .ch-off { display:none !important; }
-    /* Wide screens: the page fits one window; each side panel scrolls by itself if it must,
-       and the screen(s) on the selected channel grow into the free height. */
-    @media (min-width:1151px) {
-      #controls, #readout { position:sticky; top:0; max-height:calc(100vh - var(--hdr) - 1rem); overflow-y:auto; }
-      #scopes { min-height:calc(100vh - var(--hdr) - 1rem); display:flex; flex-direction:column; }
+    /* Wide landscape screens: three columns, and the page fits one window. Tall portrait screens
+       (vertical monitors, tablets): the scopes span the full width on top and the controls and readout
+       sit side by side in a deck below. In both, each panel scrolls by itself if it must, and the
+       screen(s) on the selected channel grow into the free height. */
+    @media (min-width:1151px) and (orientation:landscape), (min-width:760px) and (orientation:portrait) {
+      #scopes { display:flex; flex-direction:column; }
       #scopes .grow { flex:1 1 0; min-height:220px; }
       #scopes div.grow:not(.screen) { display:flex; flex-direction:column; }
       #scopes .grow > .screen { flex:1 1 0; min-height:200px; height:auto; }
       #scopes .screen.grow, #scopes .grow > .screen { aspect-ratio:auto; }
       body.multi #scopes .scope.grow { min-height:50vh; }
+    }
+    @media (min-width:1151px) and (orientation:landscape) {
+      #controls, #readout { position:sticky; top:0; max-height:calc(100vh - var(--hdr) - 1rem); overflow-y:auto; }
+      #scopes { min-height:calc(100vh - var(--hdr) - 1rem); }
+    }
+    @media (min-width:760px) and (orientation:portrait) {
+      :root { --deck:clamp(260px, 34vh, 640px); }
+      .wrap { grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-areas:"scopes scopes" "controls readout"; }
+      #scopes { grid-area:scopes; min-height:calc(100vh - var(--hdr) - 1.5rem - var(--deck)); border:0; border-bottom:1.5px solid var(--line); }
+      #controls { grid-area:controls; } #readout { grid-area:readout; border-left:1.5px solid var(--line); }
+      #controls, #readout { max-height:var(--deck); overflow-y:auto; }
+      body.multi #scopes .scope.grow { min-height:25vh; }
+      body.t814 #scopes, body.t814 #readout { border:0; }
     }
     .theme-sw { margin-left:auto; display:flex; align-items:center; gap:.35rem; font-size:.66rem; font-weight:700; letter-spacing:.1em; color:var(--dim); cursor:pointer; user-select:none; }
     .theme-sw input { margin:0; }
@@ -159,7 +173,7 @@
     body.t814 input[type=range]::-webkit-slider-thumb { background:linear-gradient(90deg, #6e7175 0 42%, #fff 42% 58%, #6e7175 58%), #6e7175; }
     body.t814 input[type=range]::-moz-range-thumb { background:linear-gradient(90deg, #6e7175 0 42%, #fff 42% 58%, #6e7175 58%), #6e7175; }
     body.t814 input[type=checkbox]::before { background:linear-gradient(90deg, #6e7175 0 42%, #fff 42% 58%, #6e7175 58%); }
-    @media (max-width:1150px) { .wrap { grid-template-columns:1fr; } #scopes { border:0; border-top:1.5px solid var(--line); border-bottom:1.5px solid var(--line); } }
+    @media (max-width:1150px) and (orientation:landscape), (max-width:759px) { .wrap { grid-template-columns:1fr; } #scopes { border:0; border-top:1.5px solid var(--line); border-bottom:1.5px solid var(--line); } }
   </style>
 </head>
 <body class="t814">
